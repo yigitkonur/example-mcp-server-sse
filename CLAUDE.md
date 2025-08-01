@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose and Context
 
-This is an **educational MCP server** demonstrating the **legacy HTTP + SSE transport pattern**. It's specifically designed to teach the deprecated two-endpoint SSE approach (`GET /connect` + `POST /messages`) versus modern transports. The server implements a calculator with golden standard MCP features but uses SSE for learning purposes.
+This is an **educational MCP server** demonstrating the **legacy HTTP + SSE transport pattern**. It's specifically designed to teach the deprecated two-endpoint SSE approach (`GET /sse` + `POST /messages`) versus modern transports. The server implements a calculator with golden standard MCP features but uses SSE for learning purposes.
 
 ## Essential Commands
 
@@ -36,7 +36,7 @@ npm run ci                 # Full CI pipeline (lint + typecheck + test + build)
 ### SSE Transport Implementation
 The architecture centers around a **two-endpoint SSE pattern** that's fundamentally different from modern MCP transports:
 
-- **`GET /connect`**: Establishes SSE stream, creates session ID, returns endpoint info
+- **`GET /sse`**: Establishes SSE stream, creates session ID, returns endpoint info
 - **`POST /messages`**: Receives JSON-RPC messages, requires `sessionId` query parameter
 - **Session Management**: Global `transports` object maps session IDs to `SSEServerTransport` instances
 - **Lifecycle**: Each connection gets an isolated MCP server instance via `createCalculatorServer()`
