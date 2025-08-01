@@ -43,7 +43,7 @@ app.use((req: Request, _res: Response, next: express.NextFunction) => {
 });
 
 // SSE endpoint - classic two-endpoint pattern
-app.get('/connect', async (_req: Request, res: Response) => {
+app.get('/sse', async (_req: Request, res: Response) => {
   console.log('[SSE] New connection request');
   
   try {
@@ -140,11 +140,11 @@ app.get('/', (_req: Request, res: Response) => {
     version: '1.0.0',
     transport: 'sse',
     endpoints: {
-      connect: '/connect',
+      sse: '/sse',
       messages: '/messages',
       health: '/health',
     },
-    instructions: 'Connect to /connect endpoint to establish SSE connection',
+    instructions: 'Connect to /sse endpoint to establish SSE connection',
   });
 });
 
@@ -156,7 +156,7 @@ const server = app.listen(PORT, () => {
 ╠═══════════════════════════════════════════════════════════╣
 ║  Transport: SSE (Server-Sent Events)                      ║
 ║  Port: ${PORT}                                              ║
-║  SSE Endpoint: http://${HOST}:${PORT}/connect                ║
+║  SSE Endpoint: http://${HOST}:${PORT}/sse                    ║
 ║  Health: http://${HOST}:${PORT}/health                       ║
 ║                                                           ║
 ║  Features:                                                ║
@@ -170,7 +170,7 @@ const server = app.listen(PORT, () => {
 ╚═══════════════════════════════════════════════════════════╝
 
 To test with MCP Inspector:
-npx @modelcontextprotocol/inspector --cli http://localhost:${PORT}/connect --transport sse
+npx @modelcontextprotocol/inspector --cli http://localhost:${PORT}/sse --transport sse
 
 Or use the SDK client:
 npm run client

@@ -18,7 +18,7 @@
 
 ## 🎯 Overview
 
-This repository demonstrates the **classic two-endpoint SSE transport** (`GET /connect` + `POST /messages`) for MCP servers. It implements the calculator learning demo following the golden standard, but uses the deprecated SSE transport for educational purposes.
+This repository demonstrates the **classic two-endpoint SSE transport** (`GET /sse` + `POST /messages`) for MCP servers. It implements the calculator learning demo following the golden standard, but uses the deprecated SSE transport for educational purposes.
 
 ### 🚨 Why This Transport is Deprecated
 
@@ -50,7 +50,7 @@ sequenceDiagram
     participant Server
     
     Note over Client,Server: Connection Establishment
-    Client->>Server: GET /connect
+    Client->>Server: GET /sse
     Server-->>Client: text/event-stream
     Server-->>Client: event: endpoint\ndata: /messages?sessionId=abc123
     
@@ -125,7 +125,7 @@ The server will start on `http://localhost:1923`
 ### Connect & Handshake
 
 ```bash
-curl -N http://localhost:1923/connect
+curl -N http://localhost:1923/sse
 # Response:
 # event: endpoint
 # data: /messages?sessionId=abc123-def456-...
@@ -152,7 +152,7 @@ curl -X POST 'http://localhost:1923/messages?sessionId=abc123' \
 
 ```bash
 # In one terminal, keep the SSE connection open:
-curl -N http://localhost:1923/connect
+curl -N http://localhost:1923/sse
 
 # In another terminal, trigger the progress demo:
 curl -X POST 'http://localhost:1923/messages?sessionId=YOUR_SESSION_ID' \
@@ -164,7 +164,7 @@ curl -X POST 'http://localhost:1923/messages?sessionId=YOUR_SESSION_ID' \
        "params": {}
      }'
 
-# Watch progress events streaming on the /connect channel
+# Watch progress events streaming on the /sse channel
 ```
 
 ## 🧪 Testing
