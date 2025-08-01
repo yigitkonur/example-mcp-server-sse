@@ -1,105 +1,102 @@
-# Calculator Learning Demo - SSE Transport (Legacy)
+# Calculator Learning Demo - SSE (Legacy) Transport
 
 <div align="center">
 
 [![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![Status](https://img.shields.io/badge/Status-Deprecated-orange)](https://spec.modelcontextprotocol.io/specification/basic/transports/#http-+-sse-(legacy))
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 </div>
 
 <p align="center">
   <strong>⚠️ DEPRECATED TRANSPORT ⚠️</strong><br/>
-  This repository demonstrates the legacy HTTP + SSE transport for educational purposes.<br/>
-  For production use, please see the <a href="https://github.com/example/calculator-learning-demo-streamable-http">Streamable HTTP transport</a>.
+  This repository demonstrates the legacy HTTP + SSE transport for <strong>educational purposes only</strong>.<br/>
+  For new projects, please use the modern <a href="https://github.com/modelcontextprotocol/mcp-server-examples/tree/main/streamable-http">Streamable HTTP transport</a>.
 </p>
-
----
 
 ## 🎯 Overview
 
-This repository demonstrates the **classic two-endpoint SSE transport** (`GET /sse` + `POST /messages`) for MCP servers. It implements the calculator learning demo following the golden standard, but uses the deprecated SSE transport for educational purposes.
+This repository provides a reference implementation of an MCP server using the **classic two-endpoint HTTP + Server-Sent Events (SSE) transport**. It is intentionally designed to teach the concepts, complexities, and limitations of this deprecated pattern compared to modern, single-endpoint transports.
 
-### 🚨 Why This Transport is Deprecated
+### Key Characteristics
 
-The HTTP + SSE transport has several limitations:
-- **Asymmetric channels**: Server-to-client uses SSE, client-to-server uses HTTP POST
-- **Complex session management**: Requires manual session ID tracking
-- **No resumability**: Cannot recover from disconnections
-- **Limited browser support**: Some proxies and firewalls block SSE
+-   **Asymmetric Channels**: Utilizes `GET /sse` for a persistent server-to-client event stream and a separate `POST /messages` endpoint for client-to-server commands.
+-   **Ephemeral Session State**: Each connection establishes a new, isolated session on the server. All state (e.g., calculation history) is stored in memory and is lost when the connection closes.
+-   **No Resumability**: If the SSE connection is lost, the session cannot be recovered. The client must establish a new session.
+-   **Network Dependency**: Requires careful handling of network proxies and firewalls that may buffer or block SSE streams.
 
-**For new projects, use the [Streamable HTTP transport](https://github.com/example/calculator-learning-demo-streamable-http) instead.**
+## 📊 Transport Comparison
 
-## 📊 Transport Comparison Table
+This table compares the four primary MCP transport mechanisms demonstrated in the learning series. The implementation in **this repository is highlighted**.
 
-| Feature | STDIO | HTTP + SSE (Legacy) | Streamable HTTP | WebSocket |
-|---------|-------|---------------------|-----------------|-----------|
-| **Connection Type** | Local process pipes | HTTP GET (SSE) + POST | Single HTTP endpoint | Persistent bidirectional |
-| **Streaming** | Full duplex | Server→Client only | Full duplex | Full duplex |
-| **Session Management** | Process-based | Query parameters | Headers/cookies | Connection-based |
-| **Resumability** | ❌ Process restart | ❌ No support | ✅ Full support | ⚠️ Reconnect only |
-| **Browser Support** | ❌ Not applicable | ⚠️ Limited | ✅ Excellent | ✅ Good |
-| **Firewall Friendly** | ✅ Local only | ⚠️ Some block SSE | ✅ Standard HTTP | ⚠️ Often blocked |
-| **Use Case** | CLI tools, editors | Legacy web apps | Modern web/mobile | Real-time apps |
+| Dimension | STDIO | **SSE (Legacy)** | Streamable HTTP (Stateful) | Streamable HTTP (Stateless) |
+|:-----------|:-----------|:---------|:---------------------|:-------------------------------|
+| **Transport Layer** | Local Pipes (`stdin`/`stdout`) | ✅ **2 × HTTP endpoints (`GET`+`POST`)** | Single HTTP endpoint `/mcp` | Single HTTP endpoint `/mcp` |
+| **Bidirectional Stream** | ✅ Yes (full duplex) | ⚠️ **Server→Client only** | ✅ Yes (server push + client stream) | ✅ Yes (within each request) |
+| **State Management** | Ephemeral (Process Memory) | ✅ **Ephemeral (Session Memory)** | Persistent (Session State) | ❌ None (Stateless) |
+| **Resumability** | ❌ None | ❌ **None** | ✅ Yes (`Last-Event-Id`) | ❌ None (by design) |
+| **Scalability** | ⚠️ Single Process | ✅ **Multi-Client** | ✅ Horizontal (Sticky Sessions) | ♾️ Infinite (Serverless) |
+| **Security** | 🔒 Process Isolation | 🌐 **Network Exposed** | 🌐 Network Exposed | 🌐 Network Exposed |
+| **Ideal Use Case** | CLI Tools, IDE Plugins | ✅ **Legacy Web Apps** | Enterprise APIs, Workflows | Serverless, Edge Functions |
 
-## 🔄 SSE Transport Flow
+## 📐 Architecture and Flow
+
+The legacy SSE transport pattern requires a two-step communication flow. The client first establishes a long-lived `GET` request to the `/sse` endpoint to listen for events. The server responds with a unique `sessionId`, which the client must then include as a query parameter in all subsequent `POST` requests to the `/messages` endpoint. This allows the server to route incoming commands to the correct session and event stream.
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant Server
-    
+
     Note over Client,Server: Connection Establishment
     Client->>Server: GET /sse
-    Server-->>Client: text/event-stream
-    Server-->>Client: event: endpoint\ndata: /messages?sessionId=abc123
-    
-    Note over Client,Server: Request/Response Flow
-    Client->>Server: POST /messages?sessionId=abc123
-    Note right of Client: {jsonrpc: "2.0", method: "calculate", ...}
-    Server-->>Client: 202 Accepted
-    
-    Server-->>Client: event: message\ndata: {jsonrpc: "2.0", result: ...}
-    
-    Note over Client,Server: Progress Notifications
-    Client->>Server: POST /messages?sessionId=abc123
-    Note right of Client: {method: "demo_progress"}
-    Server-->>Client: 202 Accepted
-    Server-->>Client: event: progress\ndata: {pct: 20}
-    Server-->>Client: event: progress\ndata: {pct: 40}
-    Server-->>Client: event: result\ndata: {relatedRequestId: ...}
+    Server-->>Client: Establishes text/event-stream connection
+    Server-->>Client: event: endpoint\ndata: /messages?sessionId=abc-123
+
+    Note over Client,Server: Client-to-Server Request
+    Client->>Server: POST /messages?sessionId=abc-123
+    Note right of Client: Body: {"jsonrpc":"2.0", "method":"tools/call", ...}
+    Server-->>Client: 202 Accepted (Response will be sent via SSE stream)
+
+    Note over Client,Server: Server-to-Client Response / Notification
+    Server-->>Client: event: message\ndata: {"jsonrpc":"2.0", "id":1, "result":...}
 ```
 
-## 📊 Golden Standard Feature Matrix
+## ✨ Feature Compliance
 
-| Name | Requirement | Implementation |
-|------|-------------|----------------|
-| `calculate` | **Core** | One-shot JSON response for basic arithmetic operations |
-| `batch_calculate` | **NOT included** | Returns JSON-RPC error `-32601` |
-| `advanced_calculate` | **NOT included** | Returns JSON-RPC error `-32601` |
-| `demo_progress` | **Extended** | After POST, server returns 202 Accepted. Then pushes 5 `progress` events followed by final `result` notification |
-| `explain-calculation` | **Core** | Return Markdown explanation |
-| `generate-problems` | **Core** | Return Markdown problems |
-| `calculator-tutor` | **Core** | Return Markdown tutoring |
-| `solve_math_problem` | **Optional** | Stub with `"Not supported in SSE demo"` |
-| `explain_formula` | **Optional** | Stub with `"Not supported in SSE demo"` |
-| `calculator_assistant` | **Optional** | Stub with `"Not supported in SSE demo"` |
-| `calculator://constants` | **Core** | Static JSON constants |
-| `calculator://history/{calculationId}` | **Extended** | Store history per session in memory (max 20 items) |
-| `calculator://stats` | **Extended** | Return total request count & uptime |
+This server implements a limited subset of the MCP Golden Standard to demonstrate the core SSE pattern. Features requiring more complex state or interaction models are stubbed or not implemented.
 
-## 🚀 Quick Start
+| Name | Status | Implementation |
+|:------|:--------|:----------------|
+| `calculate` | **Core ✅** | Basic arithmetic operations (`add`, `subtract`, `multiply`, `divide`, `power`, `sqrt`). |
+| `batch_calculate` | **Not Implemented** | Returns JSON-RPC error `-32601 Method not found`. |
+| `advanced_calculate` | **Not Implemented** | Returns JSON-RPC error `-32601 Method not found`. |
+| `demo_progress` | **Extended ✅** | Simulates progress by logging to the console; designed to show how events would be pushed. |
+| `explain-calculation` | **Core ✅** | Returns a Markdown explanation prompt. |
+| `generate-problems` | **Core ✅** | Returns a Markdown practice problem prompt. |
+| `calculator-tutor` | **Core ✅** | Returns a Markdown tutoring content prompt. |
+| `solve_math_problem` | **Stub** | Returns a message: "Limited support in SSE demo". |
+| `explain_formula` | **Stub** | Returns a message: "Limited support in SSE demo". |
+| `calculator_assistant` | **Stub** | Returns a message: "Limited support in SSE demo". |
+| `calculator://constants`| **Core ✅** | Resource for static JSON constants. |
+| `calculator://history/*`| **Extended ✅** | Resource for session-specific calculation history. |
+| `calculator://stats` | **Extended ✅** | Resource for session-specific usage statistics. |
+| `formulas://library` | **Not Implemented** | This resource is not included in this example. |
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18.x or higher
-- npm or yarn
+
+*   Node.js (v18.x or higher)
+*   npm or yarn
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/example/calculator-learning-demo-sse.git
-cd calculator-learning-demo-sse
+git clone https://github.com/modelcontextprotocol/mcp-server-examples.git
+cd mcp-server-examples/sse
 
 # Install dependencies
 npm install
@@ -111,94 +108,106 @@ npm run build
 ### Running the Server
 
 ```bash
-# Development mode (port 1923)
-npm run dev
-
-# Production mode (port 1923)
+# Start the server on port 1923
 npm start
+
+# Or, run in development mode with auto-reload
+npm run dev
 ```
 
-The server will start on `http://localhost:1923`
+### Testing with MCP Inspector
 
-## 📋 API Examples
-
-### Connect & Handshake
+You can interact with the running server using the official MCP Inspector CLI, which understands the two-endpoint SSE transport.
 
 ```bash
+npx @modelcontextprotocol/inspector --cli http://localhost:1923/sse --transport sse
+```
+
+## 📋 API Usage Examples
+
+The following `curl` examples demonstrate the required two-terminal interaction.
+
+### 1. Connect and Establish Session
+
+In your first terminal, establish a persistent connection to the `/sse` endpoint. This terminal will now display all events sent from the server for your session.
+
+```bash
+# In Terminal 1: Keep this running to see server-sent events
+# The -N flag disables buffering, showing events as they arrive.
 curl -N http://localhost:1923/sse
-# Response:
-# event: endpoint
-# data: /messages?sessionId=abc123-def456-...
-```
 
-### Call Calculate Tool
+# Server Response:
+# event: endpoint
+# data: /messages?sessionId=YOUR_UNIQUE_SESSION_ID
+```
+Copy the `sessionId` from the response data. You will need it for the next step.
+
+### 2. Call a Tool
+
+In a second terminal, use the `sessionId` you just received to make a `POST` request to the `/messages` endpoint.
 
 ```bash
-curl -X POST 'http://localhost:1923/messages?sessionId=abc123' \
+# In Terminal 2: Send a command
+# Replace YOUR_UNIQUE_SESSION_ID with the actual ID from Terminal 1.
+curl -X POST 'http://localhost:1923/messages?sessionId=YOUR_UNIQUE_SESSION_ID' \
      -H 'Content-Type: application/json' \
      -d '{
        "jsonrpc": "2.0",
        "id": 1,
-       "method": "calculate",
+       "method": "tools/call",
        "params": {
-         "a": 7,
-         "b": 6,
-         "op": "multiply"
+         "name": "calculate",
+         "arguments": { "op": "multiply", "a": 7, "b": 6 }
        }
      }'
 ```
 
-### Observe Progress Demo
+The server will respond with `202 Accepted` in Terminal 2. The actual result of the calculation will appear as a `message` event in Terminal 1.
 
-```bash
-# In one terminal, keep the SSE connection open:
-curl -N http://localhost:1923/sse
+## 🧠 State Management Model
 
-# In another terminal, trigger the progress demo:
-curl -X POST 'http://localhost:1923/messages?sessionId=YOUR_SESSION_ID' \
-     -H 'Content-Type: application/json' \
-     -d '{
-       "jsonrpc": "2.0",
-       "id": 2,
-       "method": "demo_progress",
-       "params": {}
-     }'
+**State is ephemeral and scoped to the SSE session.** This model is fundamental to the transport's design and limitations.
 
-# Watch progress events streaming on the /sse channel
-```
+-   **Session Registry**: As seen in `src/server/index.ts`, a global `transports` object maps each `sessionId` to its active `SSEServerTransport` instance. This is the core routing mechanism.
+-   **In-Memory Isolation**: Each new connection to `/sse` triggers the `createCalculatorServer()` factory, which creates a *new, isolated* `McpServer` instance. State, such as the `calculationHistory` array, is local to that instance and not shared between sessions.
+-   **No Persistence**: When a client disconnects, the `transport.onclose` handler in `index.ts` fires, which removes the session from the global registry (`delete transports[sessionId]`). The server instance and all its associated in-memory state are then garbage collected.
+
+## 🛡️ Security Model
+
+As a network-exposed service, this transport relies on HTTP-based security patterns.
+
+-   **Session ID**: The `sessionId` generated by `crypto.randomUUID()` acts as an ephemeral bearer token for the duration of the connection. It authenticates `POST` requests to a specific client's event stream.
+-   **CORS**: The server in `src/server/index.ts` is explicitly configured with `cors()` middleware to allow cross-origin requests, which is essential for browser-based clients. The allowed origin can be restricted for production environments via the `CORS_ORIGIN` environment variable.
+-   **Input Validation**: All incoming tool parameters are rigorously validated against Zod schemas defined in `src/types/calculator.ts` to prevent invalid data from causing runtime errors.
+-   **No Resumability**: While a limitation, the lack of resumability also provides a security benefit: a lost or stolen `sessionId` is only useful as long as the original SSE connection is active, limiting its exposure.
 
 ## 🧪 Testing
 
+This project includes a test suite covering the server's functionality.
+
 ```bash
-# Run all tests
+# Run all tests (51 passing, 8 skipped expected)
 npm test
 
-# Watch mode
-npm run test:watch
-
-# Coverage report
+# Run tests with code coverage report
 npm run test:coverage
+
+# Run tests in watch mode for development
+npm run test:watch
 ```
 
-## 🔒 Security Considerations
+## 📚 Project Resources
 
-- **Session IDs**: Generated using `crypto.randomUUID()` for security
-- **CORS**: Minimal headers for cross-origin support
-- **Validation**: All inputs validated with Zod schemas
-- **No Resumability**: Sessions are ephemeral and lost on disconnect
-
-## 📚 Resources
-
-- [MCP Specification](https://spec.modelcontextprotocol.io)
-- [SSE Specification](https://www.w3.org/TR/eventsource/)
-- [Streamable HTTP Demo](https://github.com/example/calculator-learning-demo-streamable-http) (Recommended)
+*   [MCP Specification](https://spec.modelcontextprotocol.io)
+*   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
+*   [HTTP + SSE (Legacy) Transport Docs](https://spec.modelcontextprotocol.io/specification/basic/transports/#http-+-sse-(legacy))
 
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 <p align="center">
-  <strong>Remember:</strong> This transport is deprecated. For new projects, use <a href="https://github.com/example/calculator-learning-demo-streamable-http">Streamable HTTP</a>.
+  <strong>Remember: This transport is deprecated and for educational use only.</strong>
 </p>
