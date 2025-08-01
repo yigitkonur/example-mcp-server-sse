@@ -60,6 +60,7 @@ describe('SSE Calculator Server - Comprehensive Test Suite', () => {
       expect(Array.isArray(tools.tools)).toBe(true);
       expect(tools.tools.length).toBeGreaterThanOrEqual(6);
       
+      // Calculate tool should be first (no educational_echo without env var)
       const tool = tools.tools[0];
       expect(tool.name).toBe('calculate');
       expect(tool.description).toContain('arithmetic operations');

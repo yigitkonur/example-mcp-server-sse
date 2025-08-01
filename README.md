@@ -19,6 +19,15 @@
 
 This repository provides a reference implementation of an MCP server using the **classic two-endpoint HTTP + Server-Sent Events (SSE) transport**. It is intentionally designed to teach the concepts, complexities, and limitations of this deprecated pattern compared to modern, single-endpoint transports.
 
+### 🔧 Educational Echo Tool
+
+This server includes an optional educational tool for learning MCP concepts:
+
+- **Tool Name**: Configurable via `SAMPLE_TOOL_NAME` environment variable
+- **Functionality**: Simple echo tool that demonstrates basic MCP tool patterns
+- **Usage**: Set `SAMPLE_TOOL_NAME=your_tool_name` to add the tool to the server
+- **Purpose**: Provides a minimal example for understanding MCP tool registration and execution
+
 ### Key Characteristics
 
 -   **Asymmetric Channels**: Utilizes `GET /sse` for a persistent server-to-client event stream and a separate `POST /messages` endpoint for client-to-server commands.

@@ -25,6 +25,26 @@ export function createCalculatorServer(): McpServer {
   // In-memory storage for calculation history
   const calculationHistory: CalculationHistoryEntry[] = [];
 
+  // TOOL: Educational Echo (Only if SAMPLE_TOOL_NAME env var is set)
+  if (process.env['SAMPLE_TOOL_NAME']) {
+    const sampleToolName = process.env['SAMPLE_TOOL_NAME'];
+    server.tool(
+      sampleToolName,
+      `Educational echo tool for learning MCP concepts`,
+      {
+        message: z.string().describe('Message to echo back'),
+      },
+      async ({ message }) => ({
+        content: [
+          {
+            type: 'text',
+            text: `Sample tool "${sampleToolName}" received: ${message}`,
+          },
+        ],
+      })
+    );
+  }
+
   // TOOL: Calculator
   server.tool(
     'calculate',
