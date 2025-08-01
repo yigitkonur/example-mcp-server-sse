@@ -1,0 +1,74 @@
+{
+  "name": "calculator-sse-demo",
+  "displayName": "Calculator SSE Demo",
+  "description": "Educational MCP server demonstrating the legacy HTTP + SSE transport pattern. Features a full calculator with math operations, constants, history tracking, and interactive tutorials. Perfect for learning about deprecated SSE transport vs modern alternatives.",
+  "version": "1.0.0",
+  "author": "Yigit Konur",
+  "repository": "https://github.com/yigitkonur/example-mcp-server-sse",
+  "license": "MIT",
+  "categories": ["education", "math", "demo"],
+  "keywords": ["calculator", "sse", "server-sent-events", "education", "math", "tutorial", "legacy-transport"],
+  "capabilities": {
+    "tools": [
+      {
+        "name": "calculate",
+        "description": "Perform mathematical calculations with support for basic arithmetic, power, and modulo operations"
+      },
+      {
+        "name": "explain-calculation",
+        "description": "Get detailed explanations of mathematical operations and concepts"
+      },
+      {
+        "name": "generate-problems",
+        "description": "Generate practice math problems for learning"
+      },
+      {
+        "name": "demo_progress",
+        "description": "Demonstrate SSE progress notifications with real-time updates"
+      }
+    ],
+    "resources": [
+      {
+        "name": "calculator://constants",
+        "description": "Access mathematical constants (π, e, φ, etc.)"
+      },
+      {
+        "name": "calculator://history/*",
+        "description": "View calculation history with pagination support"
+      },
+      {
+        "name": "calculator://stats",
+        "description": "Get usage statistics and performance metrics"
+      }
+    ],
+    "prompts": [
+      {
+        "name": "explain-calculation",
+        "description": "Get step-by-step explanations of mathematical operations"
+      },
+      {
+        "name": "generate-problems",
+        "description": "Create practice problems for specific math topics"
+      },
+      {
+        "name": "tutorial",
+        "description": "Interactive math tutorial with guided examples"
+      }
+    ]
+  },
+  "transport": "sse",
+  "endpoints": {
+    "sse": "/sse",
+    "messages": "/messages",
+    "health": "/health"
+  },
+  "features": [
+    "Real-time SSE progress notifications",
+    "Session-based calculation history",
+    "Mathematical constants library",
+    "Interactive tutorials and explanations",
+    "Practice problem generation",
+    "Usage statistics and analytics"
+  ],
+  "educationalValue": "Demonstrates legacy SSE transport pattern, session management, and why modern transports are preferred. Includes comprehensive MCP feature implementation following golden standard practices."
+}

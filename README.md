@@ -12,7 +12,7 @@
 <p align="center">
   <strong>⚠️ DEPRECATED TRANSPORT ⚠️</strong><br/>
   This repository demonstrates the legacy HTTP + SSE transport for <strong>educational purposes only</strong>.<br/>
-  For new projects, please use the modern <a href="https://github.com/modelcontextprotocol/mcp-server-examples/tree/main/streamable-http">Streamable HTTP transport</a>.
+  For new projects, please use the modern <a href="https://github.com/yigitkonur/mcp-server-examples/tree/main/streamable-http">Streamable HTTP transport</a>.
 </p>
 
 ## 🎯 Overview
@@ -65,7 +65,7 @@ sequenceDiagram
 
 ## ✨ Feature Compliance
 
-This server implements a limited subset of the MCP Golden Standard to demonstrate the core SSE pattern. Features requiring more complex state or interaction models are stubbed or not implemented.
+This server implements a limited subset of the MCP Latest Standard to demonstrate the core SSE pattern. Features requiring more complex state or interaction models are stubbed or not implemented.
 
 | Name | Status | Implementation |
 |:------|:--------|:----------------|
@@ -196,18 +196,8 @@ npm run test:coverage
 npm run test:watch
 ```
 
-## 📚 Project Resources
+## 📚 Official Resources
 
 *   [MCP Specification](https://spec.modelcontextprotocol.io)
 *   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
 *   [HTTP + SSE (Legacy) Transport Docs](https://spec.modelcontextprotocol.io/specification/basic/transports/#http-+-sse-(legacy))
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
----
-
-<p align="center">
-  <strong>Remember: This transport is deprecated and for educational use only.</strong>
-</p>
