@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE Calculator MCP Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .calculator {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .display {
+            grid-column: 1 / -1;
+            background: #f0f0f0;
+            padding: 20px;
+            text-align: right;
+            font-size: 24px;
+            border-radius: 4px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        button {
+            padding: 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.operator {
+            background: #28a745;
+        }
+        button.operator:hover {
+            background: #1e7e34;
+        }
+        button.special {
+            background: #6c757d;
+        }
+        button.special:hover {
+            background: #545b62;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #6c757d;
+            transition: color 0.2s;
+        }
+        .tab.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .resource-list {
+            list-style: none;
+            padding: 0;
+        }
+        .resource-list li {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .resource-list li:hover {
+            background: #f8f9fa;
+        }
+        .result-box {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .prompt-controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧮 SSE Calculator MCP Client</h1>
+    
+    <div class="container">
+        <h2>Connection Status</h2>
+        <div id="status" class="status disconnected">Disconnected</div>
+        <button onclick="toggleConnection()">Connect</button>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('calculator')">Calculator</button>
+            <button class="tab" onclick="switchTab('resources')">Resources</button>
+            <button class="tab" onclick="switchTab('prompts')">Prompts</button>
+            <button class="tab" onclick="switchTab('tools')">Tools</button>
+        </div>
+
+        <div id="calculator-tab" class="tab-content active">
+            <h2>Calculator</h2>
+            <div class="calculator">
+                <div id="display" class="display">0</div>
+                
+                <button onclick="appendNumber('7')">7</button>
+                <button onclick="appendNumber('8')">8</button>
+                <button onclick="appendNumber('9')">9</button>
+                <button class="operator" onclick="setOperation('divide')">÷</button>
+                
+                <button onclick="appendNumber('4')">4</button>
+                <button onclick="appendNumber('5')">5</button>
+                <button onclick="appendNumber('6')">6</button>
+                <button class="operator" onclick="setOperation('multiply')">×</button>
+                
+                <button onclick="appendNumber('1')">1</button>
+                <button onclick="appendNumber('2')">2</button>
+                <button onclick="appendNumber('3')">3</button>
+                <button class="operator" onclick="setOperation('subtract')">−</button>
+                
+                <button onclick="appendNumber('0')">0</button>
+                <button onclick="appendNumber('.')">.</button>
+                <button class="special" onclick="clearDisplay()">C</button>
+                <button class="operator" onclick="setOperation('add')">+</button>
+                
+                <button class="special" onclick="setOperation('sqrt')">√</button>
+                <button class="special" onclick="setOperation('power')">x²</button>
+                <button class="operator" style="grid-column: 3 / 5;" onclick="calculate()">=</button>
+            </div>
+            <div id="calc-result" class="result-box" style="display: none;"></div>
+        </div>
+
+        <div id="resources-tab" class="tab-content">
+            <h2>Resources</h2>
+            <ul class="resource-list">
+                <li onclick="loadResource('calculator://constants')">📊 Mathematical Constants</li>
+                <li onclick="loadResource('calculator://history/10')">📜 Recent History (10)</li>
+                <li onclick="loadResource('calculator://history/all')">📚 Complete History</li>
+                <li onclick="loadResource('calculator://stats')">📈 Usage Statistics</li>
+            </ul>
+            <div id="resource-result" class="result-box" style="display: none;"></div>
+        </div>
+
+        <div id="prompts-tab" class="tab-content">
+            <h2>Prompts</h2>
+            
+            <h3>Explain Calculation</h3>
+            <div class="prompt-controls">
+                <input type="text" id="explain-expression" placeholder="Enter expression (e.g., 2^10)">
+                <select id="explain-level">
+                    <option value="elementary">Elementary</option>
+                    <option value="intermediate" selected>Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+                <button onclick="explainCalculation()">Explain</button>
+            </div>
+
+            <h3>Generate Practice Problems</h3>
+            <div class="prompt-controls">
+                <select id="practice-topic">
+                    <option value="arithmetic">Arithmetic</option>
+                    <option value="algebra">Algebra</option>
+                    <option value="geometry">Geometry</option>
+                    <option value="mixed">Mixed</option>
+                </select>
+                <select id="practice-difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <input type="number" id="practice-count" value="5" min="1" max="10">
+                <button onclick="generateProblems()">Generate</button>
+            </div>
+
+            <div id="prompt-result" class="result-box" style="display: none;"></div>
+        </div>
+
+        <div id="tools-tab" class="tab-content">
+            <h2>Available Tools</h2>
+            <div id="tools-list"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        import { BrowserSSECalculatorClient } from './dist/browser/browser-client.js';
+
+        let client = null;
+        let connected = false;
+        let currentValue = '0';
+        let previousValue = null;
+        let currentOperation = null;
+
+        // Make functions available globally
+        window.toggleConnection = toggleConnection;
+        window.switchTab = switchTab;
+        window.appendNumber = appendNumber;
+        window.setOperation = setOperation;
+        window.clearDisplay = clearDisplay;
+        window.calculate = calculate;
+        window.loadResource = loadResource;
+        window.explainCalculation = explainCalculation;
+        window.generateProblems = generateProblems;
+
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function toggleConnection() {
+            if (connected) {
+                await disconnect();
+            } else {
+                await connect();
+            }
+        }
+
+        async function connect() {
+            try {
+                log('Connecting to SSE server...');
+                client = new BrowserSSECalculatorClient('http://localhost:8082/connect');
+                await client.connect();
+                connected = true;
+                updateStatus();
+                log('Connected successfully!');
+                
+                // Load initial data
+                await loadTools();
+                
+            } catch (error) {
+                log(`Connection failed: ${error.message}`);
+                updateStatus();
+            }
+        }
+
+        async function disconnect() {
+            if (client) {
+                await client.disconnect();
+                client = null;
+                connected = false;
+                updateStatus();
+                log('Disconnected');
+            }
+        }
+
+        function updateStatus() {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'status disconnected';
+            }
+        }
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Mark tab as active
+            event.target.classList.add('active');
+        }
+
+        // Calculator functions
+        function updateDisplay() {
+            document.getElementById('display').textContent = currentValue;
+        }
+
+        function appendNumber(num) {
+            if (currentValue === '0' && num !== '.') {
+                currentValue = num;
+            } else if (num === '.' && currentValue.includes('.')) {
+                return;
+            } else {
+                currentValue += num;
+            }
+            updateDisplay();
+        }
+
+        function setOperation(op) {
+            if (currentOperation && previousValue !== null) {
+                calculate();
+            }
+            previousValue = parseFloat(currentValue);
+            currentOperation = op;
+            currentValue = '0';
+            
+            if (op === 'sqrt') {
+                calculate();
+            }
+        }
+
+        function clearDisplay() {
+            currentValue = '0';
+            previousValue = null;
+            currentOperation = null;
+            updateDisplay();
+            document.getElementById('calc-result').style.display = 'none';
+        }
+
+        async function calculate() {
+            if (!connected || !client) {
+                log('Not connected to server');
+                return;
+            }
+
+            try {
+                const input1 = previousValue !== null ? previousValue : parseFloat(currentValue);
+                const input2 = currentOperation !== 'sqrt' ? parseFloat(currentValue) : undefined;
+                
+                log(`Calculating: ${currentOperation}(${input1}${input2 !== undefined ? ', ' + input2 : ''})`);
+                
+                const result = await client.calculate(currentOperation || 'add', input1, input2, 2);
+                
+                currentValue = result.result.toString();
+                previousValue = null;
+                currentOperation = null;
+                updateDisplay();
+                
+                // Show result
+                const resultEl = document.getElementById('calc-result');
+                resultEl.textContent = result.expression;
+                resultEl.style.display = 'block';
+                
+                log(`Result: ${result.expression}`);
+                
+            } catch (error) {
+                log(`Calculation error: ${error.message}`);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Resource functions
+        async function loadResource(uri) {
+            if (!connected || !client) {
+                log('Not connected to server');
+                return;
+            }
+
+            try {
+                log(`Loading resource: ${uri}`);
+                const data = await client.readResource(uri);
+                
+                const resultEl = document.getElementById('resource-result');
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                resultEl.style.display = 'block';
+                
+                log(`Resource loaded: ${uri}`);
+                
+            } catch (error) {
+                log(`Resource error: ${error.message}`);
+            }
+        }
+
+        // Prompt functions
+        async function explainCalculation() {
+            if (!connected || !client) {
+                log('Not connected to server');
+                return;
+            }
+
+            const expression = document.getElementById('explain-expression').value;
+            const level = document.getElementById('explain-level').value;
+            
+            if (!expression) {
+                alert('Please enter an expression to explain');
+                return;
+            }
+
+            try {
+                log(`Getting explanation for: ${expression}`);
+                const result = await client.explainCalculation(expression, level, true);
+                
+                const resultEl = document.getElementById('prompt-result');
+                resultEl.textContent = `Prompt generated for LLM:\n\n${result.messages[0].content.text}`;
+                resultEl.style.display = 'block';
+                
+                log('Explanation prompt generated');
+                
+            } catch (error) {
+                log(`Prompt error: ${error.message}`);
+            }
+        }
+
+        async function generateProblems() {
+            if (!connected || !client) {
+                log('Not connected to server');
+                return;
+            }
+
+            const topic = document.getElementById('practice-topic').value;
+            const difficulty = document.getElementById('practice-difficulty').value;
+            const count = parseInt(document.getElementById('practice-count').value);
+
+            try {
+                log(`Generating ${count} ${difficulty} ${topic} problems`);
+                const result = await client.generatePracticeProblems(topic, difficulty, count);
+                
+                const resultEl = document.getElementById('prompt-result');
+                resultEl.textContent = `Prompt generated for LLM:\n\n${result.messages[0].content.text}`;
+                resultEl.style.display = 'block';
+                
+                log('Practice problems prompt generated');
+                
+            } catch (error) {
+                log(`Prompt error: ${error.message}`);
+            }
+        }
+
+        // Tools functions
+        async function loadTools() {
+            if (!connected || !client) {
+                return;
+            }
+
+            try {
+                const result = await client.listTools();
+                const toolsEl = document.getElementById('tools-list');
+                
+                toolsEl.innerHTML = result.tools.map(tool => `
+                    <div class="container" style="margin: 10px 0;">
+                        <h3>${tool.name}</h3>
+                        <p>${tool.description}</p>
+                        ${tool.inputSchema ? `<pre>${JSON.stringify(tool.inputSchema, null, 2)}</pre>` : ''}
+                    </div>
+                `).join('');
+                
+                log('Tools loaded');
+                
+            } catch (error) {
+                log(`Tools error: ${error.message}`);
+            }
+        }
+
+        // Initialize
+        updateStatus();
+        log('Calculator client ready. Click Connect to start.');
+    </script>
+</body>
+</html>
