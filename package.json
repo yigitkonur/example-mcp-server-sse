@@ -6,16 +6,25 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "clean": "rimraf dist .tsbuildinfo",
+    "clean": "rimraf dist build .tsbuildinfo",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js --port 1923",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "lint:ci": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "build": "tsc -p tsconfig.json",
+    "check:quick": "npm run typecheck && npm run lint:ci && npm run format:check",
+    "check:deep": "npm run typecheck && npm run lint:fix && npm run lint:ci && npm run format && npm run format:check",
+    "pipeline": "npm run clean && npm run typecheck && npm run lint:fix && npm run lint:ci && npm run format && npm run format:check && npm run build",
+    "smoke:stdio": "node -e \"const {spawn}=require('child_process');try{const p=spawn('node',['dist/server.js'],{stdio:['ignore','pipe','pipe']});let exited=false;const timer=setTimeout(()=>{if(!exited){p.kill('SIGINT');}},900);p.on('exit',c=>{exited=true;clearTimeout(timer);if(c&&c!==0){process.exit(c);}console.log('smoke:stdio exit',c||0);});}catch(e){console.error(e);process.exit(1);} \"",
+    "smoke:http": "node -e \"const http=require('http');const {spawn}=require('child_process');const ports=[1923,1453,3333];const s=spawn('node',['dist/server.js'],{stdio:'inherit'});let i=0,tries=0,ok=false;function hit(){if(i>=ports.length){if(!ok){s.kill('SIGINT');process.exit(1);}return;}const port=ports[i];tries++;http.get({host:'127.0.0.1',port,path:'/sse'},res=>{ok=true;console.log('SSE endpoint status',res.statusCode,'on',port);s.kill('SIGINT');if(res.statusCode===400||res.statusCode===200)process.exit(0);else process.exit(1);}).on('error',()=>{if(tries<5){setTimeout(hit,300);}else{tries=0;i++;setTimeout(hit,200);} });}setTimeout(hit,600);\"",
+    "smoke:auto": "node -e \"const http=require('http');const {spawn}=require('child_process');const ports=[1923,1453,3333];const s=spawn('node',['dist/server.js'],{stdio:'inherit'});let i=0,tries=0,ok=false;function hit(){if(i>=ports.length){if(!ok){console.log('No HTTP detected; assuming STDIO-style process.');setTimeout(()=>{s.kill('SIGINT');process.exit(0);},800);return;}return;}const port=ports[i];tries++;http.get({host:'127.0.0.1',port,path:'/sse'},res=>{ok=true;console.log('SSE endpoint status',res.statusCode,'on',port);s.kill('SIGINT');if(res.statusCode===400||res.statusCode===200)process.exit(0);else process.exit(1);}).on('error',()=>{if(tries<5){setTimeout(hit,300);}else{tries=0;i++;setTimeout(hit,200);} });}setTimeout(hit,600);\"",
+    "all": "npm run pipeline && npm run smoke:auto",
+    "start": "node dist/server.js --port 1923",
     "check": "npm run typecheck && npm run lint:ci && npm run format:check",
-    "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/mcp",
+    "ci": "npm run all",
+    "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/sse",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -34,6 +43,9 @@
   ],
   "author": "Yigit Konur",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/yigitkonur/example-mcp-server-sse"

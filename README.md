@@ -28,7 +28,7 @@ This repository is a **deeply educational reference implementation** that demons
 Through a fully-functional calculator server, this project will teach you:
 
 1.  **🏗️ Architecture & Design**: Master the **Singleton Server Pattern**, where a single, shared `McpServer` instance manages all business logic and state, while lightweight, per-session transports handle client connections.
-2.  **⚙️ Protocol & Transport Mastery**: Correctly implement the modern **`StreamableHTTPServerTransport`**, using a single `/mcp` endpoint to handle the entire connection lifecycle (initialization, commands, and streaming).
+2.  **⚙️ Protocol & Transport Mastery**: Correctly implement the modern **`StreamableHTTPServerTransport`**, using a single `/sse` endpoint to handle the entire connection lifecycle (initialization, commands, and streaming).
 3.  **🛡️ Production-Grade Resilience**: Implement non-negotiable production features like **graceful shutdowns** to prevent data loss, robust CORS policies, and a `/health` check endpoint for monitoring.
 4.  **⚡ State & Resource Management**: Learn to manage session state efficiently using a simple **in-memory map** (`sessionId -> transport`), which is a clean and performant approach for single-node deployments.
 5.  **🚨 Protocol-Compliant Error Handling**: Understand the critical difference between generic errors and protocol-aware errors by using **`McpError` with specific `ErrorCode`s** to communicate failures clearly and effectively to clients.
@@ -83,14 +83,14 @@ This server is built on a set of core principles that define its efficiency and 
 
 1.  **Singleton Server Core:** One `McpServer` instance containing all tools, resources, and business logic is created at startup. This is memory-efficient and provides a single, authoritative source for application state.
 2.  **Per-Session Transports:** Each connecting client is assigned its own lightweight `StreamableHTTPServerTransport`. These transports are stored in a simple in-memory map, keyed by the session ID.
-3.  **Unified Endpoint:** All MCP communication occurs over a single HTTP endpoint (`/mcp`). The SDK's transport layer intelligently routes `POST`, `GET`, and `DELETE` requests internally.
+3.  **Unified Endpoint:** All MCP communication occurs over a single HTTP endpoint (`/sse`). The SDK's transport layer intelligently routes `POST`, `GET`, and `DELETE` requests internally.
 4.  **Decoupled Logic:** The business logic (defined in the `createCalculatorServer` factory function) is functionally decoupled from the web server transport layer (the Express app), even though they reside in the same `server.ts` file for project simplicity. This separation makes the code easier to reason about and test.
 
 ### Architectural Diagram
 
 ```
 ┌─────────────────────────────────────┐
-│      Express HTTP Server            │  ← API Layer (Single /mcp Endpoint)
+│      Express HTTP Server            │  ← API Layer (Single /sse Endpoint)
 ├─────────────────────────────────────┤
 │   Middleware (CORS, JSON Parsing)   │  ← Web Server Configuration
 ├─────────────────────────────────────┤
@@ -128,14 +128,14 @@ console.log('[Server] Shared Calculator MCP Server instance created.');
 
 ### Pattern 2: Per-Session Transport Management
 
-**The Principle:** The main `/mcp` route handler acts as a dispatcher. It checks for a session ID in the request header. If valid, it retrieves the existing transport. If not, it creates a new transport for the new session, connects it to the singleton server, and stores it for future requests. This logic is the heart of stateful session management.
+**The Principle:** The main `/sse` route handler acts as a dispatcher. It checks for a session ID in the request header. If valid, it retrieves the existing transport. If not, it creates a new transport for the new session, connects it to the singleton server, and stores it for future requests. This logic is the heart of stateful session management.
 
 **The Implementation:**
 ```typescript
 // src/server.ts
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
-app.all('/mcp', async (req, res) => {
+app.all('/sse', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
   if (sessionId && transports[sessionId]) {
@@ -253,7 +253,7 @@ Test the full connection lifecycle using `curl`.
 
 ```bash
 # Terminal 1: Initialize a session and capture the Mcp-Session-Id header.
-SESSION_ID=$(curl -si -X POST http://localhost:1923/mcp \
+SESSION_ID=$(curl -si -X POST http://localhost:1923/sse \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
   | grep -i 'Mcp-Session-Id' | awk '{print $2}' | tr -d '\r')
@@ -261,7 +261,7 @@ SESSION_ID=$(curl -si -X POST http://localhost:1923/mcp \
 echo "Acquired Session ID: $SESSION_ID"
 
 # Terminal 2: Use the session ID to call a tool.
-curl -X POST http://localhost:1923/mcp \
+curl -X POST http://localhost:1923/sse \
   -H "Content-Type: application/json" \
   -H "Mcp-Session-Id: $SESSION_ID" \
   -d '{"jsonrpc": "2.0","id": 2,"method": "tools/call","params": {"name": "calculate","arguments": {"op": "divide", "a": 10, "b": 0}}}'
@@ -320,7 +320,7 @@ A critical distinction is made between invalid user input and true server failur
 
 - **No Leaked Details:** Errors are wrapped in `McpError` to prevent internal details like stack traces from being sent to the client.
 - **Clear Client Communication:** Clients receive specific error codes that enable them to provide helpful feedback to users.
-- **Transport-Level Errors:** The `/mcp` endpoint returns specific HTTP 400/404 errors for session-related issues, separating them from tool execution failures.
+- **Transport-Level Errors:** The `/sse` endpoint returns specific HTTP 400/404 errors for session-related issues, separating them from tool execution failures.
 
 ### Example in Action
 

@@ -30,7 +30,7 @@ npm run ci                 # Full CI pipeline (lint + typecheck + build)
 
 The architecture follows the **current best practices** recommended by the MCP SDK:
 
-- **Single `/mcp` endpoint**: Unified endpoint handling GET (SSE stream), POST (commands), DELETE (termination)
+- **Single `/sse` endpoint**: Unified endpoint handling GET (SSE stream), POST (commands), DELETE (termination)
 - **Singleton Server Pattern**: ONE shared `McpServer` instance serves all clients for maximum efficiency
 - **StreamableHTTP Transport**: Modern transport with built-in session management and validation
 - **Simple Session State**: In-memory map of session ID to transport instances (no complex managers needed)
@@ -41,7 +41,7 @@ The architecture follows the **current best practices** recommended by the MCP S
 **`src/server.ts`** - Consolidated server implementation
 
 - Express server with StreamableHTTP transport
-- Single `/mcp` endpoint with intelligent request routing
+- Single `/sse` endpoint with intelligent request routing
 - Singleton `McpServer` instance created at startup
 - Simple transport map for session management
 - Production-ready shutdown and error handling
@@ -93,7 +93,7 @@ The codebase demonstrates production-ready quality patterns:
 
 ### StreamableHTTP Request Flow
 
-The unified `/mcp` endpoint handles the complete MCP lifecycle:
+The unified `/sse` endpoint handles the complete MCP lifecycle:
 
 1. **POST without session**: Initialize new session
 2. **POST with session**: Execute commands (tools/call, resources/read, etc.)
@@ -162,7 +162,7 @@ Implements comprehensive MCP capabilities:
 
 - **Default**: Port 1923 (configurable via `--port` CLI or `PORT` env var)
 - **Health endpoint**: `GET /health` for monitoring
-- **MCP endpoint**: `POST/GET/DELETE /mcp` for all protocol operations
+- **SSE endpoint**: `POST/GET/DELETE /sse` for all protocol operations
 
 ### Testing the Server
 
@@ -171,7 +171,7 @@ Implements comprehensive MCP capabilities:
 npm run inspector
 
 # Direct curl testing (see README.md for complete examples)
-curl -X POST http://localhost:1923/mcp \
+curl -X POST http://localhost:1923/sse \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'
 ```
@@ -183,7 +183,7 @@ This codebase serves as a **production-ready reference implementation** teaching
 ### Architecture Patterns
 
 - **Singleton Server Pattern**: The most critical MCP architectural best practice
-- **Single-Endpoint Design**: Modern `/mcp` endpoint handling all operations
+- **Single-Endpoint Design**: Modern `/sse` endpoint handling all operations
 - **Clean Separation**: Business logic (calculator-server.ts) independent of transport (index.ts)
 - **Production Readiness**: Graceful shutdown, health monitoring, CORS configuration
 
