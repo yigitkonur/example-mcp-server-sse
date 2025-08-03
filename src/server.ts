@@ -38,10 +38,10 @@ import type http from 'http'; // Explicitly import for type safety on httpServer
 // --- Model Context Protocol (MCP) SDK Dependencies ---
 // The core server class that holds all capabilities.
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-// The modern, single-endpoint transport for handling HTTP connections.
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-// A type guard to safely identify the 'initialize' request.
-import { isInitializeRequest, McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+// The deprecated SSE transport for backward compatibility with MCP Inspector.
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+// Error types for proper error handling.
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 // --- Application-Specific Dependencies ---
 // Zod is used for robust, type-safe schema validation.
@@ -63,9 +63,9 @@ const CORS_ORIGIN = process.env['CORS_ORIGIN'] || '*';
 // --- Global State Management ---
 // A simple in-memory map to store active client transports, keyed by session ID.
 // This is the core of our session management for this singleton architecture.
-// Key: Mcp-Session-Id (string)
+// Key: sessionId from SSE transport (string)
 // Value: The transport instance for that session.
-const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+const transports: { [sessionId: string]: SSEServerTransport } = {};
 
 // ===================================================================================
 // === BUSINESS LOGIC CORE (The Calculator Factory)
@@ -1258,98 +1258,76 @@ app.use((_req: Request, _res: Response, next: express.NextFunction) => {
 });
 
 // ===================================================================================
-// === CORE MCP ENDPOINT (SINGLE ENDPOINT PATTERN)
+// === DEPRECATED SSE ENDPOINTS (FOR MCP INSPECTOR COMPATIBILITY)
 // ===================================================================================
-// This single `app.all('/sse', ...)` handler manages the ENTIRE MCP lifecycle,
-// including initialization, command execution, and SSE streaming. This is the
-// modern, recommended best practice.
-app.all('/sse', (req: Request, res: Response) => {
+// The SSE transport requires two separate endpoints:
+// 1. GET /sse - Establishes the SSE stream
+// 2. POST /messages - Receives client messages with sessionId in query param
+
+// SSE endpoint for establishing the stream
+app.get('/sse', (_req: Request, res: Response) => {
   void (async () => {
+    console.warn('[MCP] GET /sse - Establishing SSE stream...');
+
     try {
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      let transport: StreamableHTTPServerTransport;
+      // Create a new SSE transport for this client
+      // The '/messages' endpoint will handle incoming POST requests
+      const transport = new SSEServerTransport('/messages', res);
 
-      // --- Session and Transport Routing Logic ---
+      // Store the transport by its auto-generated session ID
+      const sessionId = transport.sessionId;
+      transports[sessionId] = transport;
 
-      // CASE 1: Existing Session.
-      // The client sent a valid session ID that we have in our in-memory store.
-      if (sessionId && transports[sessionId]) {
-        transport = transports[sessionId];
-      }
-      // CASE 2: New Session Initialization.
-      // The request has NO session ID, is a POST, and is a valid `initialize` request.
-      else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
-        console.warn('[MCP] New initialization request. Creating session...');
+      console.warn(`[MCP] SSE stream established with session ID: ${sessionId}`);
 
-        // Create a new, lightweight transport just for this session.
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          // This callback is fired by the SDK once the session ID is created.
-          // We use it to store the new transport in our global map.
-          onsessioninitialized: (newSessionId) => {
-            console.warn(`[MCP] Session initialized with ID: ${newSessionId}`);
-            transports[newSessionId] = transport;
-          },
-        });
+      // Set up cleanup when the connection closes
+      transport.onclose = () => {
+        console.warn(`[MCP] SSE transport closed for session ${sessionId}`);
+        delete transports[sessionId];
+      };
 
-        // CRITICAL: Set up cleanup logic. When the transport closes (e.g., client
-        // disconnects or DELETE is called), remove it from our map to prevent memory leaks.
-        transport.onclose = () => {
-          const sid = transport.sessionId;
-          if (sid && transports[sid]) {
-            console.warn(`[MCP] Transport closed for session ${sid}. Cleaning up.`);
-            delete transports[sid];
-          }
-        };
-
-        // Connect this new transport to our one-and-only shared server instance.
-        await sharedMcpServer.connect(transport);
-      }
-      // CASE 3: Invalid Request.
-      // The request is not an initialization and lacks a valid, active session ID.
-      else {
-        const errorCode = sessionId ? 404 : 400; // Not Found vs. Bad Request
-        const message = sessionId
-          ? 'MCP Session not found or has expired.'
-          : 'Bad Request: All non-initialize MCP requests must include a valid Mcp-Session-Id header.';
-
-        console.error(`[MCP] Invalid request: ${message} (ID: ${sessionId || 'none'})`);
-        res.status(errorCode).json({
-          jsonrpc: '2.0',
-          error: { code: errorCode === 404 ? -32001 : -32600, message },
-          id: req.body?.id ?? null,
-        });
-        return;
-      }
-
-      // --- Delegate to SDK ---
-      // At this point, we have found or created a valid transport. We now hand over
-      // control to the SDK's transport to handle the raw request and response.
-      // The SDK will correctly handle GET (for SSE stream), POST (for commands),
-      // and DELETE (for session termination).
-      await transport.handleRequest(req, res, req.body);
-    } catch (error: unknown) {
-      // A top-level catch-all for unexpected errors in the transport layer.
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      console.error('[MCP] Unhandled error in transport layer:', error);
+      // Connect the transport to our shared MCP server
+      await sharedMcpServer.connect(transport);
+    } catch (error) {
+      console.error('[MCP] Error establishing SSE stream:', error);
       if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          error: { code: -32603, message: `Internal Server Error: ${errorMessage}` },
-          id: req.body?.id ?? null,
-        });
+        res.status(500).send('Error establishing SSE stream');
       }
     }
-  })().catch((err: unknown) => {
-    console.error('[MCP] Unhandled async error:', err);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: '2.0',
-        error: { code: -32603, message: 'Internal Server Error' },
-        id: null,
-      });
+  })();
+});
+
+// Messages endpoint for receiving client JSON-RPC requests
+app.post('/messages', (req: Request, res: Response) => {
+  void (async () => {
+    console.warn('[MCP] POST /messages - Handling client message...');
+
+    // Extract session ID from URL query parameter (not header!)
+    const sessionId = req.query.sessionId as string | undefined;
+
+    if (!sessionId) {
+      console.error('[MCP] No session ID provided in query parameter');
+      res.status(400).send('Missing sessionId query parameter');
+      return;
     }
-  });
+
+    const transport = transports[sessionId];
+    if (!transport) {
+      console.error(`[MCP] No active transport found for session ID: ${sessionId}`);
+      res.status(404).send('Session not found');
+      return;
+    }
+
+    try {
+      // Delegate to the SSE transport to handle the message
+      await transport.handlePostMessage(req, res, req.body);
+    } catch (error) {
+      console.error('[MCP] Error handling POST message:', error);
+      if (!res.headersSent) {
+        res.status(500).send('Error handling request');
+      }
+    }
+  })();
 });
 
 // Health check endpoint (remains the same)
@@ -1366,14 +1344,15 @@ app.get('/health', (_req: Request, res: Response) => {
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
   res.json({
-    name: 'Calculator StreamableHTTP MCP Server',
+    name: 'Calculator SSE MCP Server (Deprecated)',
     version: '1.0.0',
-    transport: 'streamableHttp', // Updated transport name
+    transport: 'sse', // Deprecated SSE transport
     endpoints: {
-      sse: '/sse', // Updated endpoint
+      sse: '/sse', // GET endpoint for SSE stream
+      messages: '/messages', // POST endpoint for messages
       health: '/health',
     },
-    instructions: 'Communicate with the /sse endpoint using the Streamable HTTP transport.',
+    instructions: 'GET /sse to establish SSE stream, then POST to /messages?sessionId=<id>',
   });
 });
 
@@ -1383,19 +1362,20 @@ app.get('/', (_req: Request, res: Response) => {
 const httpServer: http.Server = app.listen(PORT, () => {
   console.warn(`
 ╔═══════════════════════════════════════════════════════════╗
-║     Calculator StreamableHTTP MCP Server Started (Modern) ║
+║     Calculator SSE MCP Server Started (Deprecated)        ║
 ╠═══════════════════════════════════════════════════════════╣
-║  Transport: StreamableHTTP (Best Practice)                ║
+║  Transport: SSE (Protocol version 2024-11-05)             ║
 ║  Port: ${PORT}                                              ║
-║  SSE Endpoint: http://${HOST}:${PORT}/sse                     ║
+║  SSE Endpoint: GET http://${HOST}:${PORT}/sse                ║
+║  Messages: POST http://${HOST}:${PORT}/messages?sessionId=<id> ║
 ║  Health: http://${HOST}:${PORT}/health                       ║
 ║                                                           ║
-║  This server uses the modern, single-endpoint transport,  ║
-║  providing a more robust and efficient foundation.        ║
+║  This server uses the deprecated SSE transport for        ║
+║  compatibility with MCP Inspector and older clients.      ║
 ╚═══════════════════════════════════════════════════════════╝
 
 To test with MCP Inspector:
-npx @modelcontextprotocol/inspector --cli http://localhost:${PORT}/sse
+npx @modelcontextprotocol/inspector sse http://localhost:${PORT}/sse
   `);
 });
 
