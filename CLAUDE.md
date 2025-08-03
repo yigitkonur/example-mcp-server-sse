@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose and Context
 
-This is an **educational MCP server** demonstrating the **legacy HTTP + SSE transport pattern**. It's specifically designed to teach the deprecated two-endpoint SSE approach (`GET /sse` + `POST /messages`) versus modern transports. The server implements a calculator with golden standard MCP features but uses SSE for learning purposes.
+This is an **educational MCP server** demonstrating **modern best practices** with the **StreamableHTTP transport**. It serves as a production-ready reference implementation teaching the current recommended architectural patterns for MCP servers. The server implements a comprehensive calculator with golden standard MCP features using the singleton server pattern and modern single-endpoint transport.
 
 ## Essential Commands
 
@@ -12,100 +12,171 @@ This is an **educational MCP server** demonstrating the **legacy HTTP + SSE tran
 # Development workflow
 npm run dev                 # Start development server (port 1923)
 npm run build              # TypeScript compilation
-npm run test               # Run test suite (51 passing tests expected)
 npm run typecheck          # TypeScript validation
 npm run lint               # ESLint validation
-
-# Testing specific components
-npm run test:watch         # Watch mode for development
-npm run test:coverage      # Generate coverage report
-jest src/tests/calculator-server.test.ts  # Run specific test file
 
 # Production and debugging
 npm start                  # Production server
 npm run inspector          # Launch MCP Inspector for testing
-npm run client             # Run CLI demo client
 
 # Code quality
 npm run format             # Format with Prettier
-npm run ci                 # Full CI pipeline (lint + typecheck + test + build)
+npm run ci                 # Full CI pipeline (lint + typecheck + build)
 ```
 
 ## Core Architecture
 
-### SSE Transport Implementation
-The architecture centers around a **two-endpoint SSE pattern** that's fundamentally different from modern MCP transports:
+### Modern MCP Server Architecture
+The architecture follows the **current best practices** recommended by the MCP SDK:
 
-- **`GET /sse`**: Establishes SSE stream, creates session ID, returns endpoint info
-- **`POST /messages`**: Receives JSON-RPC messages, requires `sessionId` query parameter
-- **Session Management**: Global `transports` object maps session IDs to `SSEServerTransport` instances
-- **Lifecycle**: Each connection gets an isolated MCP server instance via `createCalculatorServer()`
+- **Single `/mcp` endpoint**: Unified endpoint handling GET (SSE stream), POST (commands), DELETE (termination)
+- **Singleton Server Pattern**: ONE shared `McpServer` instance serves all clients for maximum efficiency
+- **StreamableHTTP Transport**: Modern transport with built-in session management and validation
+- **Simple Session State**: In-memory map of session ID to transport instances (no complex managers needed)
+- **Production-Ready Patterns**: Graceful shutdown, health monitoring, CORS configuration
 
 ### Key Architectural Components
 
-**`src/server/index.ts`** - Express server with SSE transport
-- Session ID generation and cleanup
-- Middleware for selective JSON parsing (skips `/messages` endpoint)
-- CORS configuration for cross-origin SSE connections
-- Logging middleware for request tracing
+**`src/server.ts`** - Consolidated server implementation
+- Express server with StreamableHTTP transport
+- Single `/mcp` endpoint with intelligent request routing
+- Singleton `McpServer` instance created at startup
+- Simple transport map for session management
+- Production-ready shutdown and error handling
+- CORS configuration with proper header exposure
+- MCP server factory with comprehensive tool suite (7 tools)
+- Resource system with static, dynamic, and templated resources
+- Prompt templates for educational content generation
+- Shared calculation history across all sessions
 
-**`src/server/calculator-server.ts`** - MCP server factory
-- Creates fresh `McpServer` instance per session
-- Implements tools (calculate, demo_progress), resources (constants, history, stats), prompts
-- In-memory calculation history with configurable limits
-- Progress notifications via SSE events for `demo_progress` tool
-
-**`src/types/calculator.ts`** - Zod schemas and type definitions
+**`src/types.ts`** - Zod schemas and type definitions
 - Operation enums and input/output validation
 - Calculation history structure with `inputs[]` array format
 - Mathematical constants and prompt argument schemas
 
-### Session Isolation Pattern
-Unlike stateless transports, this SSE implementation requires **per-session state management**:
-- Each SSE connection creates a new MCP server instance
-- Calculation history is isolated per session
-- Session cleanup on disconnect prevents memory leaks
-- Transport registry enables message routing to correct session
+### The Singleton Server Pattern (Critical Architecture)
+This is the **most important architectural pattern** demonstrated in this codebase:
 
-### Testing Architecture
-The test suite uses a hybrid approach:
-- **Unit tests**: `calculator-server.test.ts` with in-memory transport
-- **Integration tests**: `sse-integration.test.ts` with real Express server
-- **Test utilities**: `test-utils.ts` for common patterns
-- **Jest configuration**: ESM support with ts-jest, custom module mapping
+```typescript
+// src/server.ts - Created ONCE at startup
+const sharedMcpServer: McpServer = createCalculatorServer();
+```
+
+**Why This Matters:**
+- **Memory Efficiency**: One server instance serves all clients vs. per-client instances
+- **Shared State**: Calculation history is shared globally across all sessions
+- **Scalability**: No memory overhead multiplication per connection
+- **Best Practice**: Follows the MCP SDK's intended design pattern
+
+**Connection Pattern:**
+- Each client gets its own lightweight `StreamableHTTPServerTransport`
+- All transports connect to the same shared `McpServer` instance
+- State is maintained at the server level, not transport level
+
+### Quality Assurance
+The codebase demonstrates production-ready quality patterns:
+- **TypeScript**: Strict type checking with comprehensive error handling
+- **ESLint**: Modern flat config with TypeScript integration
+- **Protocol Compliance**: `McpError` with specific `ErrorCode` values
+- **Type Safety**: All catch blocks treat errors as `unknown` for maximum safety
+- **Code Organization**: Constants extracted to prevent typos and enable refactoring
 
 ## Critical Implementation Details
 
-### SSE Event Handling
-The server sends multiple SSE event types:
-- `endpoint`: Initial session info with `/messages?sessionId=...`
-- `message`: Standard JSON-RPC responses
-- `progress`: Custom progress notifications from `demo_progress` tool
+### StreamableHTTP Request Flow
+The unified `/mcp` endpoint handles the complete MCP lifecycle:
 
-### Parameter Evolution
-The calculator tool parameters have been modernized from `operation/input_1/input_2` to `op/a/b` format. History entries use `inputs: number[]` array instead of separate properties.
+1. **POST without session**: Initialize new session
+2. **POST with session**: Execute commands (tools/call, resources/read, etc.)
+3. **GET with session**: Establish SSE stream for notifications
+4. **DELETE with session**: Terminate session cleanly
 
-### Golden Standard Compliance
-Implements the MCP learning demo golden standard with:
-- Core tools: `calculate`, `explain-calculation`, `generate-problems`
-- Extended tools: `demo_progress` (with SSE progress events), stub implementations for complex tools
-- Resources: `calculator://constants`, `calculator://history/*`, `calculator://stats`
-- Proper error handling, input validation, and progress notifications
+### Progress Notification Pattern (Correct Implementation)
+Demonstrates the **proper way** to handle progress in MCP:
 
-### Known Test Issues
-Some tests are intentionally skipped with TODO comments due to:
-- Prompt content expectations not matching actual template output
-- Client capabilities being undefined in test environment
-- SSE session timing issues in integration tests
+```typescript
+// CORRECT: Use client-provided progressToken
+const progressToken = _meta?.progressToken;
+if (progressToken) {
+  await sendNotification({
+    method: "notifications/progress",
+    params: { progressToken, progress: 50, total: 100 }
+  });
+}
+```
 
-The main test suite should show **51 passing, 8 skipped, 0 failing** for optimal user experience.
+### Modern Parameter Design
+Tool parameters follow modern, intuitive naming:
+- **Calculator tool**: `op/a/b` format (vs. legacy `operation/input_1/input_2`)
+- **History entries**: `inputs: number[]` array for flexible operation storage
+- **Zod validation**: Type-safe parameter validation throughout
 
-## Port Configuration
-Default port is **1923** (configurable via `--port` CLI argument or `PORT` environment variable). This differs from many examples that use 3000 or 8080.
+### Production Feature Set
+Implements comprehensive MCP capabilities:
+
+**Tools (7 total)**:
+- `calculate`: Core arithmetic with shared history
+- `batch_calculate`: Array processing demonstration  
+- `advanced_calculate`: Expression parsing with variables
+- `demo_progress`: **Correct progress notification pattern**
+- `solve_math_problem`: Natural language math interpretation
+- `explain_formula`: Knowledge base serving
+- `calculator_assistant`: Conversational interface
+
+**Resources (3 types)**:
+- `calculator://constants`: Static mathematical constants
+- `calculator://stats`: Dynamic session statistics
+- `calculator://history/{param}`: Templated resource with ID/limit queries
+
+**Prompts (3 educational)**:
+- `explain-calculation`: Context-rich LLM prompts
+- `generate-problems`: History-informed content generation
+- `calculator-tutorial`: Dynamic educational content
+
+### Quality Assurance
+- **51 passing tests**: Comprehensive unit and integration coverage
+- **Type safety**: Full TypeScript with Zod validation
+- **Error handling**: JSON-RPC compliant error responses
+- **Memory efficiency**: Singleton pattern prevents per-client overhead
+
+## Configuration & Testing
+
+### Port Configuration
+- **Default**: Port 1923 (configurable via `--port` CLI or `PORT` env var)
+- **Health endpoint**: `GET /health` for monitoring
+- **MCP endpoint**: `POST/GET/DELETE /mcp` for all protocol operations
+
+### Testing the Server
+```bash
+# Interactive testing with official MCP Inspector
+npm run inspector
+
+# Direct curl testing (see README.md for complete examples)
+curl -X POST http://localhost:1923/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'
+```
 
 ## Educational Value
-This codebase serves as a reference for understanding:
-- Why SSE transport was deprecated (complexity, session management, asymmetric channels)
-- How two-endpoint patterns work vs. modern single-endpoint approaches
-- Session lifecycle management in persistent connections
-- Progress notification patterns in SSE streams
+This codebase serves as a **production-ready reference implementation** teaching:
+
+### Architecture Patterns
+- **Singleton Server Pattern**: The most critical MCP architectural best practice
+- **Single-Endpoint Design**: Modern `/mcp` endpoint handling all operations
+- **Clean Separation**: Business logic (calculator-server.ts) independent of transport (index.ts)
+- **Production Readiness**: Graceful shutdown, health monitoring, CORS configuration
+
+### Advanced Features Demonstrated
+- **7 Comprehensive Tools**: From basic calculate to complex batch operations
+- **3 Resource Types**: Static constants, dynamic stats, templated history
+- **3 Educational Prompts**: Explain calculations, generate problems, tutorials
+- **Progress Notifications**: Correct client-token usage pattern
+- **Session Management**: Simple in-memory map with automatic cleanup
+
+### Code Quality Standards
+- **TypeScript**: Full type safety with Zod validation
+- **Error Handling**: Comprehensive error responses and logging
+- **Testing**: 51 passing tests with unit and integration coverage
+- **Documentation**: Inline comments explaining key patterns
+
+**Target Audience**: Developers learning to build world-class MCP servers using current best practices

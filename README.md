@@ -1,212 +1,321 @@
-# Calculator Learning Demo - SSE (Legacy) Transport
-
 <div align="center">
 
-[![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
-[![Status](https://img.shields.io/badge/Status-Deprecated-orange)](https://spec.modelcontextprotocol.io/specification/basic/transports/#http-+-sse-(legacy))
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [Legacy SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
 
 </div>
 
-<p align="center">
-  <strong>⚠️ DEPRECATED TRANSPORT ⚠️</strong><br/>
-  This repository demonstrates the legacy HTTP + SSE transport for <strong>educational purposes only</strong>.<br/>
-  For new projects, please use the modern <a href="https://github.com/yigitkonur/mcp-server-examples/tree/main/streamable-http">Streamable HTTP transport</a>.
-</p>
+---
 
-## 🎯 Overview
+# 🎓 MCP Stateful HTTP Server (Singleton Pattern) - Educational Reference
 
-This repository provides a reference implementation of an MCP server using the **classic two-endpoint HTTP + Server-Sent Events (SSE) transport**. It is intentionally designed to teach the concepts, complexities, and limitations of this deprecated pattern compared to modern, single-endpoint transports.
+<div align="center">
 
-### 🔧 Educational Echo Tool
+**A Production-Ready Model Context Protocol Server Teaching Singleton Architecture and In-Memory State Best Practices**
 
-This server includes an optional educational tool for learning MCP concepts:
+[![MCP Version](https://img.shields.io/badge/MCP-Latest%20Spec-blue)](https://spec.modelcontextprotocol.io)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![SDK](https://img.shields.io/badge/SDK-Production%20Ready-green)](https://github.com/modelcontextprotocol/typescript-sdk)
+[![Architecture](https://img.shields.io/badge/Architecture-Singleton%20Server-gold)]()
 
-- **Tool Name**: Configurable via `SAMPLE_TOOL_NAME` environment variable
-- **Functionality**: Simple echo tool that demonstrates basic MCP tool patterns
-- **Usage**: Set `SAMPLE_TOOL_NAME=your_tool_name` to add the tool to the server
-- **Purpose**: Provides a minimal example for understanding MCP tool registration and execution
+*Learn by building a world-class MCP server with a focus on efficiency, clean architecture, and production-grade resilience.*
 
-### Key Characteristics
+</div>
 
--   **Asymmetric Channels**: Utilizes `GET /sse` for a persistent server-to-client event stream and a separate `POST /messages` endpoint for client-to-server commands.
--   **Ephemeral Session State**: Each connection establishes a new, isolated session on the server. All state (e.g., calculation history) is stored in memory and is lost when the connection closes.
--   **No Resumability**: If the SSE connection is lost, the session cannot be recovered. The client must establish a new session.
--   **Network Dependency**: Requires careful handling of network proxies and firewalls that may buffer or block SSE streams.
+## 🎯 Project Goal & Core Concepts
 
-## 📊 Transport Comparison
+This repository is a **deeply educational reference implementation** that demonstrates how to build a production-quality MCP server using the **Stateful Singleton Server** pattern. It is the perfect starting point for creating stateful services that are efficient, robust, and easy to understand.
 
-This table compares the four primary MCP transport mechanisms demonstrated in the learning series. The implementation in **this repository is highlighted**.
+Through a fully-functional calculator server, this project will teach you:
 
-| Dimension | STDIO | **SSE (Legacy)** | Streamable HTTP (Stateful) | Streamable HTTP (Stateless) |
-|:-----------|:-----------|:---------|:---------------------|:-------------------------------|
-| **Transport Layer** | Local Pipes (`stdin`/`stdout`) | ✅ **2 × HTTP endpoints (`GET`+`POST`)** | Single HTTP endpoint `/mcp` | Single HTTP endpoint `/mcp` |
-| **Bidirectional Stream** | ✅ Yes (full duplex) | ⚠️ **Server→Client only** | ✅ Yes (server push + client stream) | ✅ Yes (within each request) |
-| **State Management** | Ephemeral (Process Memory) | ✅ **Ephemeral (Session Memory)** | Persistent (Session State) | ❌ None (Stateless) |
-| **Resumability** | ❌ None | ❌ **None** | ✅ Yes (`Last-Event-Id`) | ❌ None (by design) |
-| **Scalability** | ⚠️ Single Process | ✅ **Multi-Client** | ✅ Horizontal (Sticky Sessions) | ♾️ Infinite (Serverless) |
-| **Security** | 🔒 Process Isolation | 🌐 **Network Exposed** | 🌐 Network Exposed | 🌐 Network Exposed |
-| **Ideal Use Case** | CLI Tools, IDE Plugins | ✅ **Legacy Web Apps** | Enterprise APIs, Workflows | Serverless, Edge Functions |
+1.  **🏗️ Architecture & Design**: Master the **Singleton Server Pattern**, where a single, shared `McpServer` instance manages all business logic and state, while lightweight, per-session transports handle client connections.
+2.  **⚙️ Protocol & Transport Mastery**: Correctly implement the modern **`StreamableHTTPServerTransport`**, using a single `/mcp` endpoint to handle the entire connection lifecycle (initialization, commands, and streaming).
+3.  **🛡️ Production-Grade Resilience**: Implement non-negotiable production features like **graceful shutdowns** to prevent data loss, robust CORS policies, and a `/health` check endpoint for monitoring.
+4.  **⚡ State & Resource Management**: Learn to manage session state efficiently using a simple **in-memory map** (`sessionId -> transport`), which is a clean and performant approach for single-node deployments.
+5.  **🚨 Protocol-Compliant Error Handling**: Understand the critical difference between generic errors and protocol-aware errors by using **`McpError` with specific `ErrorCode`s** to communicate failures clearly and effectively to clients.
 
-## 📐 Architecture and Flow
+## 🤔 When to Use This Architecture
 
-The legacy SSE transport pattern requires a two-step communication flow. The client first establishes a long-lived `GET` request to the `/sse` endpoint to listen for events. The server responds with a unique `sessionId`, which the client must then include as a query parameter in all subsequent `POST` requests to the `/messages` endpoint. This allows the server to route incoming commands to the correct session and event stream.
+The Singleton Server pattern is a powerful and efficient model. It is the ideal choice for:
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server
+*   **Single-Instance Deployments:** Perfect for applications running on a single server or virtual machine where all user sessions are handled by one process.
+*   **Rapid Prototyping:** The simplest way to get a stateful MCP server running without the complexity of an external database or cache.
+*   **Services with Volatile State:** Suitable for applications where session data does not need to persist if the server restarts.
+*   **Foundation for Scalability:** This architecture can be extended with an external state store (like Redis) to support horizontal scaling, as demonstrated in the "Stateful HTTP" reference implementation.
 
-    Note over Client,Server: Connection Establishment
-    Client->>Server: GET /sse
-    Server-->>Client: Establishes text/event-stream connection
-    Server-->>Client: event: endpoint\ndata: /messages?sessionId=abc-123
-
-    Note over Client,Server: Client-to-Server Request
-    Client->>Server: POST /messages?sessionId=abc-123
-    Note right of Client: Body: {"jsonrpc":"2.0", "method":"tools/call", ...}
-    Server-->>Client: 202 Accepted (Response will be sent via SSE stream)
-
-    Note over Client,Server: Server-to-Client Response / Notification
-    Server-->>Client: event: message\ndata: {"jsonrpc":"2.0", "id":1, "result":...}
-```
-
-## ✨ Feature Compliance
-
-This server implements a limited subset of the MCP Latest Standard to demonstrate the core SSE pattern. Features requiring more complex state or interaction models are stubbed or not implemented.
-
-| Name | Status | Implementation |
-|:------|:--------|:----------------|
-| `calculate` | **Core ✅** | Basic arithmetic operations (`add`, `subtract`, `multiply`, `divide`, `power`, `sqrt`). |
-| `batch_calculate` | **Not Implemented** | Returns JSON-RPC error `-32601 Method not found`. |
-| `advanced_calculate` | **Not Implemented** | Returns JSON-RPC error `-32601 Method not found`. |
-| `demo_progress` | **Extended ✅** | Simulates progress by logging to the console; designed to show how events would be pushed. |
-| `explain-calculation` | **Core ✅** | Returns a Markdown explanation prompt. |
-| `generate-problems` | **Core ✅** | Returns a Markdown practice problem prompt. |
-| `calculator-tutor` | **Core ✅** | Returns a Markdown tutoring content prompt. |
-| `solve_math_problem` | **Stub** | Returns a message: "Limited support in SSE demo". |
-| `explain_formula` | **Stub** | Returns a message: "Limited support in SSE demo". |
-| `calculator_assistant` | **Stub** | Returns a message: "Limited support in SSE demo". |
-| `calculator://constants`| **Core ✅** | Resource for static JSON constants. |
-| `calculator://history/*`| **Extended ✅** | Resource for session-specific calculation history. |
-| `calculator://stats` | **Extended ✅** | Resource for session-specific usage statistics. |
-| `formulas://library` | **Not Implemented** | This resource is not included in this example. |
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-*   Node.js (v18.x or higher)
+*   Node.js ≥ 20.0.0
 *   npm or yarn
+*   A basic understanding of TypeScript, Express.js, and JSON-RPC.
 
-### Installation
+### Installation & Running
 
 ```bash
 # Clone the repository
-git clone https://github.com/modelcontextprotocol/mcp-server-examples.git
-cd mcp-server-examples/sse
+git clone https://github.com/yigitkonur/example-mcp-server-sse
+cd example-mcp-server-sse
 
 # Install dependencies
 npm install
 
-# Build the project
-npm run build
-```
-
-### Running the Server
-
-```bash
-# Start the server on port 1923
+# Start the server (defaults to port 1923)
 npm start
-
-# Or, run in development mode with auto-reload
-npm run dev
 ```
 
-### Testing with MCP Inspector
-
-You can interact with the running server using the official MCP Inspector CLI, which understands the two-endpoint SSE transport.
+### Essential Commands
 
 ```bash
-npx @modelcontextprotocol/inspector --cli http://localhost:1923/sse --transport sse
+npm run dev        # Development mode with hot-reload (uses tsx)
+npm run build      # TypeScript compilation to dist/
+npm run start      # Run the production-ready server
+npm run typecheck  # TypeScript validation
+npm run lint       # ESLint validation  
+npm run inspector  # Launch the MCP Inspector for interactive testing```
+
+## 📐 Architecture Overview
+
+### Key Principles
+
+This server is built on a set of core principles that define its efficiency and maintainability.
+
+1.  **Singleton Server Core:** One `McpServer` instance containing all tools, resources, and business logic is created at startup. This is memory-efficient and provides a single, authoritative source for application state.
+2.  **Per-Session Transports:** Each connecting client is assigned its own lightweight `StreamableHTTPServerTransport`. These transports are stored in a simple in-memory map, keyed by the session ID.
+3.  **Unified Endpoint:** All MCP communication occurs over a single HTTP endpoint (`/mcp`). The SDK's transport layer intelligently routes `POST`, `GET`, and `DELETE` requests internally.
+4.  **Decoupled Logic:** The business logic (defined in the `createCalculatorServer` factory function) is functionally decoupled from the web server transport layer (the Express app), even though they reside in the same `server.ts` file for project simplicity. This separation makes the code easier to reason about and test.
+
+### Architectural Diagram
+
+```
+┌─────────────────────────────────────┐
+│      Express HTTP Server            │  ← API Layer (Single /mcp Endpoint)
+├─────────────────────────────────────┤
+│   Middleware (CORS, JSON Parsing)   │  ← Web Server Configuration
+├─────────────────────────────────────┤
+│   In-Memory Transport Store         │  ← Simple Session State
+│    (Session ID → Transport Map)     │
+├─────────────────────────────────────┤
+│    Singleton MCP Server Core        │  ← SHARED Business Logic
+│  • Tools • Resources • Prompts      │
+├─────────────────────────────────────┤
+│  StreamableHTTP Transport Layer     │  ← MCP Protocol Engine
+└─────────────────────────────────────┘
 ```
 
-## 📋 API Usage Examples
+## 🔧 Core Implementation Patterns
 
-The following `curl` examples demonstrate the required two-terminal interaction.
+This section highlights the most critical, non-negotiable best practices demonstrated in this server.
 
-### 1. Connect and Establish Session
+### Pattern 1: The Singleton Server Instance
 
-In your first terminal, establish a persistent connection to the `/sse` endpoint. This terminal will now display all events sent from the server for your session.
+**The Principle:** To ensure shared state (like `calculationHistory`) and efficient memory usage, a single, global `McpServer` instance is created when the application starts. This instance is then shared across all user connections.
+
+**The Implementation:**
+```typescript
+// src/server.ts
+
+// The factory function defines all server capabilities.
+function createCalculatorServer(): McpServer { /* ... all tools ... */ }
+
+// ✅ BEST PRACTICE: Create ONE shared McpServer instance at startup.
+const sharedMcpServer: McpServer = createCalculatorServer();
+console.log('[Server] Shared Calculator MCP Server instance created.');
+
+// This 'sharedMcpServer' will be connected to every new client transport.```
+
+### Pattern 2: Per-Session Transport Management
+
+**The Principle:** The main `/mcp` route handler acts as a dispatcher. It checks for a session ID in the request header. If valid, it retrieves the existing transport. If not, it creates a new transport for the new session, connects it to the singleton server, and stores it for future requests. This logic is the heart of stateful session management.
+
+**The Implementation:**
+```typescript
+// src/server.ts
+const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+
+app.all('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+  if (sessionId && transports[sessionId]) {
+    // Existing Session: Reuse the transport from our in-memory map.
+    // ...
+  } else if (isInitializeRequest(req.body)) {
+    // New Session: Create a new transport for the client.
+    // ...
+    // Store the new transport for future requests.
+    transports[newSessionId] = transport;
+  } else {
+    // Invalid Request: Respond with an HTTP 400/404 error.
+    // ...
+  }
+
+  // Delegate to the correct transport to handle the request.
+  await transport.handleRequest(req, res, req.body);
+});
+```
+
+### Pattern 3: Protocol-Compliant Error Handling
+
+**The Principle:** A robust server must clearly distinguish between a server failure and invalid user input. Throwing a generic `Error` is an anti-pattern because it results in a vague "Internal Server Error" for the client. The best practice is to throw a specific `McpError` with a standard `ErrorCode`.
+
+**The Implementation:**
+```typescript
+// src/server.ts - inside the 'calculate' tool
+
+// ❌ ANTI-PATTERN: This hides the true cause of the error from the client.
+// throw new Error('Division by zero is not allowed');
+
+// ✅ BEST PRACTICE: Use McpError with a specific ErrorCode.
+// This tells the client that the user's parameters were invalid, allowing
+// the client application to display a helpful error message to the user.
+if (op === 'divide' && b === 0) {
+    throw new McpError(
+        ErrorCode.InvalidParams, // The user's input was invalid.
+        'Division by zero is not allowed.'
+    );
+}
+```
+
+**Additional Hardening:**
+```typescript
+// Type-safe catch blocks treat errors as 'unknown' for maximum safety
+} catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // Handle safely without assuming error type
+}
+```
+
+### Pattern 4: Production-Ready Graceful Shutdown
+
+**The Principle:** A production server must never be killed abruptly. A graceful shutdown handler ensures that all active connections are properly closed, pending operations are finished, and resources are released before the process exits.
+
+**The Implementation:**
+```typescript
+// src/server.ts
+const httpServer = app.listen(PORT, /* ... */);
+
+const shutdown = () => {
+  // 1. Close all active client transports to notify clients.
+  for (const sessionId in transports) {
+    transports[sessionId]?.close();
+  }
+
+  // 2. Stop the HTTP server from accepting new connections.
+  httpServer.close(() => {
+    console.log('[Server] HTTP server closed.');
+    process.exit(0);
+  });
+
+  // 3. Force exit after a timeout to prevent hanging.
+  setTimeout(() => { process.exit(1); }, 5000);
+};
+
+process.on('SIGINT', shutdown); // Ctrl+C
+process.on('SIGTERM', shutdown); // `docker stop`
+```
+
+## 🧪 Testing & Validation
+
+### Health & Metrics
+
+A `/health` endpoint is included for monitoring and diagnostics.
 
 ```bash
-# In Terminal 1: Keep this running to see server-sent events
-# The -N flag disables buffering, showing events as they arrive.
-curl -N http://localhost:1923/sse
-
-# Server Response:
-# event: endpoint
-# data: /messages?sessionId=YOUR_UNIQUE_SESSION_ID
+# Check the server's health and active session count
+curl http://localhost:1923/health
 ```
-Copy the `sessionId` from the response data. You will need it for the next step.
+**Expected Response:**
+```json
+{
+  "status": "healthy",
+  "activeSessions": 0,
+  "transport": "streamableHttp",
+  "uptime": 15.3,
+  "memory": { /* ... memory usage details ... */ }
+}
+```
 
-### 2. Call a Tool
+### Manual Request (`curl`)
 
-In a second terminal, use the `sessionId` you just received to make a `POST` request to the `/messages` endpoint.
+Test the full connection lifecycle using `curl`.
 
 ```bash
-# In Terminal 2: Send a command
-# Replace YOUR_UNIQUE_SESSION_ID with the actual ID from Terminal 1.
-curl -X POST 'http://localhost:1923/messages?sessionId=YOUR_UNIQUE_SESSION_ID' \
-     -H 'Content-Type: application/json' \
-     -d '{
-       "jsonrpc": "2.0",
-       "id": 1,
-       "method": "tools/call",
-       "params": {
-         "name": "calculate",
-         "arguments": { "op": "multiply", "a": 7, "b": 6 }
-       }
-     }'
+# Terminal 1: Initialize a session and capture the Mcp-Session-Id header.
+SESSION_ID=$(curl -si -X POST http://localhost:1923/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+  | grep -i 'Mcp-Session-Id' | awk '{print $2}' | tr -d '\r')
+
+echo "Acquired Session ID: $SESSION_ID"
+
+# Terminal 2: Use the session ID to call a tool.
+curl -X POST http://localhost:1923/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: $SESSION_ID" \
+  -d '{"jsonrpc": "2.0","id": 2,"method": "tools/call","params": {"name": "calculate","arguments": {"op": "divide", "a": 10, "b": 0}}}'
+```
+**Expected Error Response (from the `b: 0` invalid param):**
+```json
+{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"Division by zero is not allowed."}}
 ```
 
-The server will respond with `202 Accepted` in Terminal 2. The actual result of the calculation will appear as a `message` event in Terminal 1.
+### Interactive Testing with MCP Inspector
 
-## 🧠 State Management Model
-
-**State is ephemeral and scoped to the SSE session.** This model is fundamental to the transport's design and limitations.
-
--   **Session Registry**: As seen in `src/server/index.ts`, a global `transports` object maps each `sessionId` to its active `SSEServerTransport` instance. This is the core routing mechanism.
--   **In-Memory Isolation**: Each new connection to `/sse` triggers the `createCalculatorServer()` factory, which creates a *new, isolated* `McpServer` instance. State, such as the `calculationHistory` array, is local to that instance and not shared between sessions.
--   **No Persistence**: When a client disconnects, the `transport.onclose` handler in `index.ts` fires, which removes the session from the global registry (`delete transports[sessionId]`). The server instance and all its associated in-memory state are then garbage collected.
-
-## 🛡️ Security Model
-
-As a network-exposed service, this transport relies on HTTP-based security patterns.
-
--   **Session ID**: The `sessionId` generated by `crypto.randomUUID()` acts as an ephemeral bearer token for the duration of the connection. It authenticates `POST` requests to a specific client's event stream.
--   **CORS**: The server in `src/server/index.ts` is explicitly configured with `cors()` middleware to allow cross-origin requests, which is essential for browser-based clients. The allowed origin can be restricted for production environments via the `CORS_ORIGIN` environment variable.
--   **Input Validation**: All incoming tool parameters are rigorously validated against Zod schemas defined in `src/types/calculator.ts` to prevent invalid data from causing runtime errors.
--   **No Resumability**: While a limitation, the lack of resumability also provides a security benefit: a lost or stolen `sessionId` is only useful as long as the original SSE connection is active, limiting its exposure.
-
-## 🧪 Testing
-
-This project includes a test suite covering the server's functionality.
+Use the official inspector CLI to interactively explore and test all of the server's capabilities.
 
 ```bash
-# Run all tests (51 passing, 8 skipped expected)
-npm test
-
-# Run tests with code coverage report
-npm run test:coverage
-
-# Run tests in watch mode for development
-npm run test:watch
+# This command connects the inspector to your running server.
+npm run inspector
 ```
 
-## 📚 Official Resources
+## 🏭 Deployment & Configuration
 
-*   [MCP Specification](https://spec.modelcontextprotocol.io)
-*   [Model Context Protocol Documentation](https://modelcontextprotocol.io)
-*   [HTTP + SSE (Legacy) Transport Docs](https://spec.modelcontextprotocol.io/specification/basic/transports/#http-+-sse-(legacy))
+### Configuration
+
+The server is configured using environment variables:
+
+| Variable | Description | Default |
+| :--- |:--- |:--- |
+| `PORT` | The port for the HTTP server to listen on. | `1923` |
+| `CORS_ORIGIN` | Allowed origin for CORS requests. **Should be set to a specific domain in production.** | `*` |
+
+### Deployment
+
+This server is designed for a **single-node deployment**.
+
+*   **State Management:** Because session state is stored in the server's memory, all requests for a given session *must* be routed to the same server process.
+*   **Scaling:** This architecture does not scale horizontally out-of-the-box. To run multiple instances, you would need a load balancer configured with **"sticky sessions"** (session affinity). For true horizontal scaling, see the "Stateful HTTP" reference implementation which uses Redis.
+*   **Deployment:** It can be run as a standalone Node.js process or containerized using a `Dockerfile`.
+
+## 🛡️ Error Handling Philosophy
+
+This server demonstrates a robust error handling strategy that is critical for production MCP servers:
+
+### User Errors vs. Server Errors
+
+A critical distinction is made between invalid user input and true server failures:
+
+- **`ErrorCode.InvalidParams`**: Thrown when the user provides bad data (e.g., dividing by zero). This tells the client "you made a mistake."
+- **`ErrorCode.InternalError`**: Thrown for unexpected server-side issues. This tells the client "we made a mistake."
+
+### Implementation Benefits
+
+- **No Leaked Details:** Errors are wrapped in `McpError` to prevent internal details like stack traces from being sent to the client.
+- **Clear Client Communication:** Clients receive specific error codes that enable them to provide helpful feedback to users.
+- **Transport-Level Errors:** The `/mcp` endpoint returns specific HTTP 400/404 errors for session-related issues, separating them from tool execution failures.
+
+### Example in Action
+
+When a user attempts division by zero, the server responds with:
+```json
+{"jsonrpc":"2.0","error":{"code":-32602,"message":"Division by zero is not allowed."}}
+```
+
+This tells the client exactly what went wrong and allows for graceful error handling in the user interface.
+
+## Key Architectural Takeaways
+
+*   **The Singleton Pattern is Efficient:** For single-node deployments, using one server instance with many lightweight transports is highly memory-efficient.
+*   **Decouple Logic from Transport:** Keeping business logic (`createCalculatorServer`) separate from the web framework (`Express`) makes the code cleaner, more testable, and easier to maintain.
+*   **Errors are Part of the Protocol:** Handling errors correctly with `McpError` is not just a detail—it is a core feature of a robust and reliable server that enables clients to build better user experiences.
+*   **Plan for Production:** Features like graceful shutdowns and health checks are not afterthoughts; they are fundamental requirements for any service that needs to be reliable.

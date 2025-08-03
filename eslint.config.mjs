@@ -50,17 +50,6 @@ export default [
         Request: 'readonly',
         Response: 'readonly',
         XMLHttpRequest: 'readonly',
-        // Jest globals
-        describe: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        jest: 'readonly',
-        it: 'readonly',
-        fail: 'readonly',
       },
     },
     plugins: {

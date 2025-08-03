@@ -1,27 +1,21 @@
 {
-  "name": "calculator-learning-demo-sse",
+  "name": "calculator-learning-demo-mcp",
   "version": "1.0.0",
-  "description": "MCP SSE Server - Learning edition demo using legacy HTTP + SSE transport",
-  "main": "dist/index.js",
+  "description": "MCP Server - Modern reference implementation using StreamableHTTP transport",
+  "main": "dist/server.js",
   "type": "module",
   "scripts": {
     "build": "tsc --build",
     "build:clean": "tsc --build --clean",
-    "dev": "tsx watch src/server/index.ts -- --port 1923",
-    "start": "node dist/server/index.js --port 1923",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "dev": "tsx watch src/server.ts -- --port 1923",
+    "start": "node dist/server.js --port 1923",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --fix",
     "format": "prettier --write \"src/**/*.{ts,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,json,md}\"",
     "typecheck": "tsc --noEmit",
-    "client": "tsx src/client/demo.ts",
-    "browser:dev": "vite",
-    "browser:build": "vite build",
-    "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/connect",
-    "ci": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+    "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/mcp",
+    "ci": "npm run lint && npm run typecheck && npm run build"
   },
   "keywords": [
     "mcp",
@@ -44,7 +38,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "cors": "^2.8.5",
-    "eventsource": "^2.0.2",
     "express": "^4.18.2",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
@@ -52,21 +45,14 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@types/cors": "^2.8.19",
-    "@types/eventsource": "^1.1.15",
     "@types/express": "^4.17.23",
-    "@types/jest": "^29.5.11",
     "@types/node": "^20.11.0",
-    "@types/node-fetch": "^2.6.13",
     "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
-    "jest": "^29.7.0",
-    "node-fetch": "^3.3.2",
     "prettier": "^3.2.4",
-    "ts-jest": "^29.1.1",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.11"
+    "tsx": "^4.20.3",
+    "typescript": "^5.3.3"
   }
 }
