@@ -12,7 +12,7 @@ services:
     container_name: mcp-calculator-server-prod
     ports:
       # Map the host port to the container port defined in the .env file
-      - "${PORT}:${PORT}"
+      - '${PORT}:${PORT}'
     env_file:
       - .env
     environment:
@@ -29,7 +29,7 @@ services:
     image: mcp-calculator-server-dev
     container_name: mcp-calculator-server-dev
     ports:
-      - "${PORT}:${PORT}"
+      - '${PORT}:${PORT}'
     env_file:
       - .env
     environment:

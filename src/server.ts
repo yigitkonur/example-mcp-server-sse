@@ -30,10 +30,10 @@
  */
 
 // --- Core Node.js and Express Dependencies ---
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { randomUUID } from 'node:crypto';
-import http from 'http'; // Explicitly import for type safety on httpServer
+import type http from 'http'; // Explicitly import for type safety on httpServer
 
 // --- Model Context Protocol (MCP) SDK Dependencies ---
 // The core server class that holds all capabilities.
@@ -47,7 +47,7 @@ import { isInitializeRequest, McpError, ErrorCode } from '@modelcontextprotocol/
 // Zod is used for robust, type-safe schema validation.
 import { z } from 'zod';
 // Local type definitions and constants.
-import { CalculationHistoryEntry, MATH_CONSTANTS } from './types.js';
+import { type CalculationHistoryEntry, MATH_CONSTANTS } from './types.js';
 
 // --- Global Server Configuration ---
 // These settings are configured via environment variables or command-line arguments.
@@ -184,10 +184,7 @@ export function createCalculatorServer(): McpServer {
             // would result in a vague "Internal Server Error" for the client.
             // By using `ErrorCode.InvalidParams`, we clearly signal that the
             // user's input was the source of the failure, not a server bug.
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              'Division by zero is not allowed'
-            );
+            throw new McpError(ErrorCode.InvalidParams, 'Division by zero is not allowed');
           }
           result = input_1 / (input_2 ?? 1);
           break;
@@ -202,7 +199,7 @@ export function createCalculatorServer(): McpServer {
             // proper client-side error handling and user experience.
             throw new McpError(
               ErrorCode.InvalidParams,
-              'Cannot calculate square root of negative number'
+              'Cannot calculate square root of negative number',
             );
           }
           result = Math.sqrt(input_1);
@@ -211,10 +208,7 @@ export function createCalculatorServer(): McpServer {
           // DEFENSIVE PROGRAMMING: This should never happen due to Zod validation,
           // but we handle it gracefully anyway. InvalidParams is appropriate here
           // because an unknown operation is fundamentally a client input problem.
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Unknown operation: ${operation}`
-          );
+          throw new McpError(ErrorCode.InvalidParams, `Unknown operation: ${operation}`);
       }
 
       // Check for invalid results
@@ -223,10 +217,7 @@ export function createCalculatorServer(): McpServer {
         // that shouldn't happen with valid inputs. We use InternalError
         // because this indicates a problem with our calculation logic,
         // not the user's input (which was already validated above).
-        throw new McpError(
-          ErrorCode.InternalError,
-          'Result is not a finite number'
-        );
+        throw new McpError(ErrorCode.InternalError, 'Result is not a finite number');
       }
 
       // Format result to specified precision
@@ -350,10 +341,7 @@ export function createCalculatorServer(): McpServer {
         // Handle ID-based query
         const calculation = calculationHistory.find((entry) => entry.id === param);
         if (!calculation) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Calculation not found: ${param}`
-          );
+          throw new McpError(ErrorCode.InvalidParams, `Calculation not found: ${param}`);
         }
         return {
           contents: [
@@ -590,7 +578,7 @@ Make it practical with examples.`,
       }
 
       // Send progress notifications asynchronously
-      (async () => {
+      void (async () => {
         try {
           await sendNotification({
             method: 'notifications/message',
@@ -626,7 +614,9 @@ Make it practical with examples.`,
           });
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error('Failed to send progress notifications:', errorMessage, { originalError: error });
+          console.error('Failed to send progress notifications:', errorMessage, {
+            originalError: error,
+          });
           // Send error notification
           try {
             await sendNotification({
@@ -637,7 +627,8 @@ Make it practical with examples.`,
               },
             });
           } catch (notifyError: unknown) {
-            const notifyErrorMessage = notifyError instanceof Error ? notifyError.message : String(notifyError);
+            const notifyErrorMessage =
+              notifyError instanceof Error ? notifyError.message : String(notifyError);
             console.error('Failed to send error notification:', notifyErrorMessage);
           }
         }
@@ -1129,9 +1120,11 @@ Make it practical with examples.`,
       // sandboxed math expression parser library like `mathjs` or a similar
       // vetted tool. NEVER use `eval` or `new Function` on user input.
       // !!! END CRITICAL SECURITY WARNING !!!
-      
-      console.warn('⚠️  SECURITY WARNING: advanced_calculate tool is executing potentially unsafe code evaluation');
-      
+
+      console.warn(
+        '⚠️  SECURITY WARNING: advanced_calculate tool is executing potentially unsafe code evaluation',
+      );
+
       try {
         // Simple expression evaluator (UNSAFE - DO NOT USE IN PRODUCTION)
         let evalExpression = expression;
@@ -1148,7 +1141,7 @@ Make it practical with examples.`,
         if (!/^[0-9+\-*/().\s\w]+$/.test(evalExpression)) {
           throw new McpError(
             ErrorCode.InvalidParams,
-            'Invalid expression: contains unsupported characters'
+            'Invalid expression: contains unsupported characters',
           );
         }
 
@@ -1173,7 +1166,7 @@ Make it practical with examples.`,
         if (typeof result !== 'number' || !isFinite(result)) {
           throw new McpError(
             ErrorCode.InvalidParams,
-            'Expression did not evaluate to a finite number'
+            'Expression did not evaluate to a finite number',
           );
         }
 
@@ -1183,12 +1176,14 @@ Make it practical with examples.`,
               type: 'text',
               text: JSON.stringify(
                 {
-                  securityWarning: 'This tool uses unsafe code evaluation and should not be used in production',
+                  securityWarning:
+                    'This tool uses unsafe code evaluation and should not be used in production',
                   expression,
                   variables,
                   evaluatedExpression: evalExpression,
                   result: Math.round(result * 10000) / 10000, // Round to 4 decimal places
-                  recommendation: 'Use a safe math expression parser like mathjs in production environments',
+                  recommendation:
+                    'Use a safe math expression parser like mathjs in production environments',
                 },
                 null,
                 2,
@@ -1207,7 +1202,8 @@ Make it practical with examples.`,
                   error: `Failed to evaluate expression: ${errorMessage}`,
                   expression,
                   variables,
-                  securityNote: 'This failure demonstrates why safe expression parsers should be used',
+                  securityNote:
+                    'This failure demonstrates why safe expression parsers should be used',
                 },
                 null,
                 2,
@@ -1229,8 +1225,7 @@ Make it practical with examples.`,
 // all incoming connections, making it highly memory efficient. All shared state
 // (like `calculationHistory`) lives inside this single object.
 const sharedMcpServer: McpServer = createCalculatorServer();
-console.log('[Server] Shared Calculator MCP Server instance created.');
-
+console.warn('[Server] Shared Calculator MCP Server instance created.');
 
 // ===================================================================================
 // === WEB SERVER SETUP (Express.js)
@@ -1257,9 +1252,8 @@ app.use(express.json());
 
 // 3. Request Logger
 // A simple middleware to log every incoming request for debugging purposes.
-app.use((req: Request, _res: Response, next: express.NextFunction) => {
-  const sessionId = req.headers['mcp-session-id'] || 'N/A';
-  console.log(`[HTTP] ${req.method} ${req.path} (Session: ${sessionId})`);
+app.use((_req: Request, _res: Response, next: express.NextFunction) => {
+  // Simple request logging middleware
   next();
 });
 
@@ -1284,15 +1278,15 @@ app.all('/mcp', async (req: Request, res: Response) => {
     // CASE 2: New Session Initialization.
     // The request has NO session ID, is a POST, and is a valid `initialize` request.
     else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
-      console.log('[MCP] New initialization request. Creating session...');
-      
+      console.warn('[MCP] New initialization request. Creating session...');
+
       // Create a new, lightweight transport just for this session.
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         // This callback is fired by the SDK once the session ID is created.
         // We use it to store the new transport in our global map.
         onsessioninitialized: (newSessionId) => {
-          console.log(`[MCP] Session initialized with ID: ${newSessionId}`);
+          console.warn(`[MCP] Session initialized with ID: ${newSessionId}`);
           transports[newSessionId] = transport;
         },
       });
@@ -1302,7 +1296,7 @@ app.all('/mcp', async (req: Request, res: Response) => {
       transport.onclose = () => {
         const sid = transport.sessionId;
         if (sid && transports[sid]) {
-          console.log(`[MCP] Transport closed for session ${sid}. Cleaning up.`);
+          console.warn(`[MCP] Transport closed for session ${sid}. Cleaning up.`);
           delete transports[sid];
         }
       };
@@ -1317,7 +1311,7 @@ app.all('/mcp', async (req: Request, res: Response) => {
       const message = sessionId
         ? 'MCP Session not found or has expired.'
         : 'Bad Request: All non-initialize MCP requests must include a valid Mcp-Session-Id header.';
-      
+
       console.error(`[MCP] Invalid request: ${message} (ID: ${sessionId || 'none'})`);
       res.status(errorCode).json({
         jsonrpc: '2.0',
@@ -1333,7 +1327,6 @@ app.all('/mcp', async (req: Request, res: Response) => {
     // The SDK will correctly handle GET (for SSE stream), POST (for commands),
     // and DELETE (for session termination).
     await transport.handleRequest(req, res, req.body);
-
   } catch (error: unknown) {
     // A top-level catch-all for unexpected errors in the transport layer.
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -1377,7 +1370,7 @@ app.get('/', (_req: Request, res: Response) => {
 // === SERVER STARTUP
 // ===================================================================================
 const httpServer: http.Server = app.listen(PORT, () => {
-  console.log(`
+  console.warn(`
 ╔═══════════════════════════════════════════════════════════╗
 ║     Calculator StreamableHTTP MCP Server Started (Modern) ║
 ╠═══════════════════════════════════════════════════════════╣
@@ -1403,18 +1396,30 @@ npx @modelcontextprotocol/inspector --cli http://localhost:${PORT}/mcp
  * ensure no requests are dropped and all connections are closed cleanly.
  */
 const shutdown = () => {
-  console.log('\n[Server] Shutting down gracefully...');
+  console.warn('\n[Server] Shutting down gracefully...');
 
   // 1. Proactively close all active client transports. This sends a signal
   //    to connected clients that the server is going down.
-  console.log(`[Server] Closing ${Object.keys(transports).length} active sessions...`);
+  console.warn(`[Server] Closing ${Object.keys(transports).length} active sessions...`);
   for (const sessionId in transports) {
-    transports[sessionId]?.close();
+    try {
+      const transport = transports[sessionId];
+      if (transport) {
+        const closeResult = transport.close();
+        if (closeResult instanceof Promise) {
+          void closeResult.catch((error: unknown) => {
+            console.error(`Failed to close session ${sessionId}:`, error);
+          });
+        }
+      }
+    } catch (error: unknown) {
+      console.error(`Failed to close session ${sessionId}:`, error);
+    }
   }
 
   // 2. Stop the HTTP server from accepting any new incoming connections.
   httpServer.close(() => {
-    console.log('[Server] HTTP server closed. Exiting.');
+    console.warn('[Server] HTTP server closed. Exiting.');
     process.exit(0); // Success
   });
 

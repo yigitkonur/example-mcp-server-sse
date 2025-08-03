@@ -5,17 +5,24 @@
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "build": "tsc --build",
-    "build:clean": "tsc --build --clean",
-    "dev": "tsx watch src/server.ts -- --port 1923",
-    "start": "node dist/server.js --port 1923",
-    "lint": "eslint 'src/**/*.ts'",
-    "lint:fix": "eslint 'src/**/*.ts' --fix",
-    "format": "prettier --write \"src/**/*.{ts,json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,json,md}\"",
+    "dev": "tsx src/server.ts",
+    "clean": "rimraf dist .tsbuildinfo",
     "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js --port 1923",
+    "lint": "eslint .",
+    "lint:ci": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint:ci && npm run format:check",
     "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/mcp",
-    "ci": "npm run lint && npm run typecheck && npm run build"
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,md,css,scss}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "keywords": [
     "mcp",
@@ -51,7 +58,11 @@
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.3",
     "prettier": "^3.2.4",
+    "rimraf": "^6.0.1",
     "tsx": "^4.20.3",
     "typescript": "^5.3.3"
   }

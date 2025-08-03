@@ -1,6 +1,6 @@
 <div align="center">
 
-**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [Legacy SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
+**[STDIO](https://github.com/yigitkonur/example-mcp-server-stdio) | [Stateful HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http) | [Stateless HTTP](https://github.com/yigitkonur/example-mcp-server-streamable-http-stateless) | [SSE](https://github.com/yigitkonur/example-mcp-server-sse)**
 
 </div>
 
@@ -12,12 +12,12 @@
 
 **A Production-Ready Model Context Protocol Server Teaching Singleton Architecture and In-Memory State Best Practices**
 
-[![MCP Version](https://img.shields.io/badge/MCP-Latest%20Spec-blue)](https://spec.modelcontextprotocol.io)
+[![MCP Version](https://img.shields.io/badge/MCP-1.0.0-blue)](https://modelcontextprotocol.io)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![SDK](https://img.shields.io/badge/SDK-Production%20Ready-green)](https://github.com/modelcontextprotocol/typescript-sdk)
 [![Architecture](https://img.shields.io/badge/Architecture-Singleton%20Server-gold)]()
 
-*Learn by building a world-class MCP server with a focus on efficiency, clean architecture, and production-grade resilience.*
+_Learn by building a world-class MCP server with a focus on efficiency, clean architecture, and production-grade resilience._
 
 </div>
 
@@ -37,18 +37,18 @@ Through a fully-functional calculator server, this project will teach you:
 
 The Singleton Server pattern is a powerful and efficient model. It is the ideal choice for:
 
-*   **Single-Instance Deployments:** Perfect for applications running on a single server or virtual machine where all user sessions are handled by one process.
-*   **Rapid Prototyping:** The simplest way to get a stateful MCP server running without the complexity of an external database or cache.
-*   **Services with Volatile State:** Suitable for applications where session data does not need to persist if the server restarts.
-*   **Foundation for Scalability:** This architecture can be extended with an external state store (like Redis) to support horizontal scaling, as demonstrated in the "Stateful HTTP" reference implementation.
+- **Single-Instance Deployments:** Perfect for applications running on a single server or virtual machine where all user sessions are handled by one process.
+- **Rapid Prototyping:** The simplest way to get a stateful MCP server running without the complexity of an external database or cache.
+- **Services with Volatile State:** Suitable for applications where session data does not need to persist if the server restarts.
+- **Foundation for Scalability:** This architecture can be extended with an external state store (like Redis) to support horizontal scaling, as demonstrated in the "Stateful HTTP" reference implementation.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-*   Node.js ≥ 20.0.0
-*   npm or yarn
-*   A basic understanding of TypeScript, Express.js, and JSON-RPC.
+- Node.js ≥ 20.0.0
+- npm or yarn
+- A basic understanding of TypeScript, Express.js, and JSON-RPC.
 
 ### Installation & Running
 
@@ -71,8 +71,9 @@ npm run dev        # Development mode with hot-reload (uses tsx)
 npm run build      # TypeScript compilation to dist/
 npm run start      # Run the production-ready server
 npm run typecheck  # TypeScript validation
-npm run lint       # ESLint validation  
-npm run inspector  # Launch the MCP Inspector for interactive testing```
+npm run lint       # ESLint validation
+npm run inspector  # Launch the MCP Inspector for interactive testing
+```
 
 ## 📐 Architecture Overview
 
@@ -112,7 +113,8 @@ This section highlights the most critical, non-negotiable best practices demonst
 **The Principle:** To ensure shared state (like `calculationHistory`) and efficient memory usage, a single, global `McpServer` instance is created when the application starts. This instance is then shared across all user connections.
 
 **The Implementation:**
-```typescript
+
+````typescript
 // src/server.ts
 
 // The factory function defines all server capabilities.
@@ -152,13 +154,14 @@ app.all('/mcp', async (req, res) => {
   // Delegate to the correct transport to handle the request.
   await transport.handleRequest(req, res, req.body);
 });
-```
+````
 
 ### Pattern 3: Protocol-Compliant Error Handling
 
 **The Principle:** A robust server must clearly distinguish between a server failure and invalid user input. Throwing a generic `Error` is an anti-pattern because it results in a vague "Internal Server Error" for the client. The best practice is to throw a specific `McpError` with a standard `ErrorCode`.
 
 **The Implementation:**
+
 ```typescript
 // src/server.ts - inside the 'calculate' tool
 
@@ -169,16 +172,18 @@ app.all('/mcp', async (req, res) => {
 // This tells the client that the user's parameters were invalid, allowing
 // the client application to display a helpful error message to the user.
 if (op === 'divide' && b === 0) {
-    throw new McpError(
-        ErrorCode.InvalidParams, // The user's input was invalid.
-        'Division by zero is not allowed.'
-    );
+  throw new McpError(
+    ErrorCode.InvalidParams, // The user's input was invalid.
+    'Division by zero is not allowed.',
+  );
 }
 ```
 
 **Additional Hardening:**
+
 ```typescript
 // Type-safe catch blocks treat errors as 'unknown' for maximum safety
+...
 } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     // Handle safely without assuming error type
@@ -190,9 +195,10 @@ if (op === 'divide' && b === 0) {
 **The Principle:** A production server must never be killed abruptly. A graceful shutdown handler ensures that all active connections are properly closed, pending operations are finished, and resources are released before the process exits.
 
 **The Implementation:**
+
 ```typescript
 // src/server.ts
-const httpServer = app.listen(PORT, /* ... */);
+const httpServer = app.listen(PORT /* ... */);
 
 const shutdown = () => {
   // 1. Close all active client transports to notify clients.
@@ -207,7 +213,9 @@ const shutdown = () => {
   });
 
   // 3. Force exit after a timeout to prevent hanging.
-  setTimeout(() => { process.exit(1); }, 5000);
+  setTimeout(() => {
+    process.exit(1);
+  }, 5000);
 };
 
 process.on('SIGINT', shutdown); // Ctrl+C
@@ -224,14 +232,18 @@ A `/health` endpoint is included for monitoring and diagnostics.
 # Check the server's health and active session count
 curl http://localhost:1923/health
 ```
+
 **Expected Response:**
+
 ```json
 {
   "status": "healthy",
   "activeSessions": 0,
   "transport": "streamableHttp",
   "uptime": 15.3,
-  "memory": { /* ... memory usage details ... */ }
+  "memory": {
+    /* ... memory usage details ... */
+  }
 }
 ```
 
@@ -254,9 +266,15 @@ curl -X POST http://localhost:1923/mcp \
   -H "Mcp-Session-Id: $SESSION_ID" \
   -d '{"jsonrpc": "2.0","id": 2,"method": "tools/call","params": {"name": "calculate","arguments": {"op": "divide", "a": 10, "b": 0}}}'
 ```
+
 **Expected Error Response (from the `b: 0` invalid param):**
+
 ```json
-{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"Division by zero is not allowed."}}
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "error": { "code": -32602, "message": "Division by zero is not allowed." }
+}
 ```
 
 ### Interactive Testing with MCP Inspector
@@ -274,18 +292,18 @@ npm run inspector
 
 The server is configured using environment variables:
 
-| Variable | Description | Default |
-| :--- |:--- |:--- |
-| `PORT` | The port for the HTTP server to listen on. | `1923` |
-| `CORS_ORIGIN` | Allowed origin for CORS requests. **Should be set to a specific domain in production.** | `*` |
+| Variable      | Description                                                                             | Default |
+| :------------ | :-------------------------------------------------------------------------------------- | :------ |
+| `PORT`        | The port for the HTTP server to listen on.                                              | `1923`  |
+| `CORS_ORIGIN` | Allowed origin for CORS requests. **Should be set to a specific domain in production.** | `*`     |
 
 ### Deployment
 
 This server is designed for a **single-node deployment**.
 
-*   **State Management:** Because session state is stored in the server's memory, all requests for a given session *must* be routed to the same server process.
-*   **Scaling:** This architecture does not scale horizontally out-of-the-box. To run multiple instances, you would need a load balancer configured with **"sticky sessions"** (session affinity). For true horizontal scaling, see the "Stateful HTTP" reference implementation which uses Redis.
-*   **Deployment:** It can be run as a standalone Node.js process or containerized using a `Dockerfile`.
+- **State Management:** Because session state is stored in the server's memory, all requests for a given session _must_ be routed to the same server process.
+- **Scaling:** This architecture does not scale horizontally out-of-the-box. To run multiple instances, you would need a load balancer configured with **"sticky sessions"** (session affinity). For true horizontal scaling, see the "Stateful HTTP" reference implementation which uses Redis.
+- **Deployment:** It can be run as a standalone Node.js process or containerized using a `Dockerfile`.
 
 ## 🛡️ Error Handling Philosophy
 
@@ -307,15 +325,16 @@ A critical distinction is made between invalid user input and true server failur
 ### Example in Action
 
 When a user attempts division by zero, the server responds with:
+
 ```json
-{"jsonrpc":"2.0","error":{"code":-32602,"message":"Division by zero is not allowed."}}
+{ "jsonrpc": "2.0", "error": { "code": -32602, "message": "Division by zero is not allowed." } }
 ```
 
 This tells the client exactly what went wrong and allows for graceful error handling in the user interface.
 
 ## Key Architectural Takeaways
 
-*   **The Singleton Pattern is Efficient:** For single-node deployments, using one server instance with many lightweight transports is highly memory-efficient.
-*   **Decouple Logic from Transport:** Keeping business logic (`createCalculatorServer`) separate from the web framework (`Express`) makes the code cleaner, more testable, and easier to maintain.
-*   **Errors are Part of the Protocol:** Handling errors correctly with `McpError` is not just a detail—it is a core feature of a robust and reliable server that enables clients to build better user experiences.
-*   **Plan for Production:** Features like graceful shutdowns and health checks are not afterthoughts; they are fundamental requirements for any service that needs to be reliable.
+- **The Singleton Pattern is Efficient:** For single-node deployments, using one server instance with many lightweight transports is highly memory-efficient.
+- **Decouple Logic from Transport:** Keeping business logic (`createCalculatorServer`) separate from the web framework (`Express`) makes the code cleaner, more testable, and easier to maintain.
+- **Errors are Part of the Protocol:** Handling errors correctly with `McpError` is not just a detail—it is a core feature of a robust and reliable server that enables clients to build better user experiences.
+- **Plan for Production:** Features like graceful shutdowns and health checks are not afterthoughts; they are fundamental requirements for any service that needs to be reliable.

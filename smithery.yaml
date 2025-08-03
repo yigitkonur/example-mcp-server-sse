@@ -1,0 +1,78 @@
+# smithery.yaml
+#
+# ⚠️  IMPORTANT: Smithery Registry Limitation
+# 
+# This MCP server uses Server-Sent Events (SSE) transport via StreamableHTTP,
+# which is NOT currently supported by Smithery's hosting platform.
+# 
+# Smithery supports:
+# - STDIO transport (process-based communication)
+# - Stateless HTTP transport (request/response only)
+# 
+# But does NOT support:
+# - SSE/EventSource streaming (which this server uses)
+# - WebSocket transport
+# - Persistent connection transports
+#
+# This server demonstrates modern MCP best practices with StreamableHTTP + SSE,
+# making it incompatible with Smithery's current architecture.
+#
+# For educational/demo purposes, a STDIO version would be needed for Smithery.
+# See the MCP SDK documentation for STDIO transport examples.
+#
+# References:
+# - Smithery docs: https://smithery.ai/docs/build/project-config/smithery-yaml
+# - MCP transports: https://spec.modelcontextprotocol.io/specification/basic/transports/
+#
+
+# This configuration is provided for reference but will not work on Smithery
+# due to the SSE transport incompatibility mentioned above.
+
+id: yigitkonur/calculator-learning-demo-sse
+name: Calculator Learning Demo (SSE - Incompatible with Smithery)
+description: >
+  Educational MCP server demonstrating StreamableHTTP with SSE transport.
+  Uses modern singleton server pattern with comprehensive calculator tools.
+  NOTE: Not compatible with Smithery due to SSE transport usage.
+repository: https://github.com/yigitkonur/example-mcp-server-sse
+license: MIT
+
+# This startCommand configuration would not work on Smithery
+# because it uses SSE transport which Smithery doesn't support
+startCommand:
+  type: streamable_http  # ⚠️  SSE-based transport - NOT supported by Smithery
+  command: node
+  args: ["dist/server.js", "--port", "1923"]
+  cwd: ./
+  port: 1923
+
+# Configuration schema for educational reference
+# (not functional on Smithery due to transport incompatibility)
+configSchema:
+  type: object
+  properties:
+    PORT:
+      type: integer
+      minimum: 1024
+      maximum: 65535
+      default: 1923
+      description: "Port for the HTTP server"
+    LOG_LEVEL:
+      type: string
+      enum: ["debug", "info", "warn", "error"]
+      default: "info"
+      description: "Logging level for the server"
+  required: []
+
+# Additional metadata for documentation
+tags:
+  - calculator
+  - educational
+  - typescript
+  - sse
+  - streamable-http
+  - singleton-pattern
+  - best-practices
+
+# Note: To make this server compatible with Smithery, it would need to be
+# rewritten to use STDIO transport instead of StreamableHTTP with SSE.

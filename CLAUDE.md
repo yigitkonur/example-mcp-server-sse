@@ -27,6 +27,7 @@ npm run ci                 # Full CI pipeline (lint + typecheck + build)
 ## Core Architecture
 
 ### Modern MCP Server Architecture
+
 The architecture follows the **current best practices** recommended by the MCP SDK:
 
 - **Single `/mcp` endpoint**: Unified endpoint handling GET (SSE stream), POST (commands), DELETE (termination)
@@ -38,6 +39,7 @@ The architecture follows the **current best practices** recommended by the MCP S
 ### Key Architectural Components
 
 **`src/server.ts`** - Consolidated server implementation
+
 - Express server with StreamableHTTP transport
 - Single `/mcp` endpoint with intelligent request routing
 - Singleton `McpServer` instance created at startup
@@ -50,11 +52,13 @@ The architecture follows the **current best practices** recommended by the MCP S
 - Shared calculation history across all sessions
 
 **`src/types.ts`** - Zod schemas and type definitions
+
 - Operation enums and input/output validation
 - Calculation history structure with `inputs[]` array format
 - Mathematical constants and prompt argument schemas
 
 ### The Singleton Server Pattern (Critical Architecture)
+
 This is the **most important architectural pattern** demonstrated in this codebase:
 
 ```typescript
@@ -63,18 +67,22 @@ const sharedMcpServer: McpServer = createCalculatorServer();
 ```
 
 **Why This Matters:**
+
 - **Memory Efficiency**: One server instance serves all clients vs. per-client instances
 - **Shared State**: Calculation history is shared globally across all sessions
 - **Scalability**: No memory overhead multiplication per connection
 - **Best Practice**: Follows the MCP SDK's intended design pattern
 
 **Connection Pattern:**
+
 - Each client gets its own lightweight `StreamableHTTPServerTransport`
 - All transports connect to the same shared `McpServer` instance
 - State is maintained at the server level, not transport level
 
 ### Quality Assurance
+
 The codebase demonstrates production-ready quality patterns:
+
 - **TypeScript**: Strict type checking with comprehensive error handling
 - **ESLint**: Modern flat config with TypeScript integration
 - **Protocol Compliance**: `McpError` with specific `ErrorCode` values
@@ -84,6 +92,7 @@ The codebase demonstrates production-ready quality patterns:
 ## Critical Implementation Details
 
 ### StreamableHTTP Request Flow
+
 The unified `/mcp` endpoint handles the complete MCP lifecycle:
 
 1. **POST without session**: Initialize new session
@@ -92,6 +101,7 @@ The unified `/mcp` endpoint handles the complete MCP lifecycle:
 4. **DELETE with session**: Terminate session cleanly
 
 ### Progress Notification Pattern (Correct Implementation)
+
 Demonstrates the **proper way** to handle progress in MCP:
 
 ```typescript
@@ -99,24 +109,28 @@ Demonstrates the **proper way** to handle progress in MCP:
 const progressToken = _meta?.progressToken;
 if (progressToken) {
   await sendNotification({
-    method: "notifications/progress",
-    params: { progressToken, progress: 50, total: 100 }
+    method: 'notifications/progress',
+    params: { progressToken, progress: 50, total: 100 },
   });
 }
 ```
 
 ### Modern Parameter Design
+
 Tool parameters follow modern, intuitive naming:
+
 - **Calculator tool**: `op/a/b` format (vs. legacy `operation/input_1/input_2`)
 - **History entries**: `inputs: number[]` array for flexible operation storage
 - **Zod validation**: Type-safe parameter validation throughout
 
 ### Production Feature Set
+
 Implements comprehensive MCP capabilities:
 
 **Tools (7 total)**:
+
 - `calculate`: Core arithmetic with shared history
-- `batch_calculate`: Array processing demonstration  
+- `batch_calculate`: Array processing demonstration
 - `advanced_calculate`: Expression parsing with variables
 - `demo_progress`: **Correct progress notification pattern**
 - `solve_math_problem`: Natural language math interpretation
@@ -124,16 +138,19 @@ Implements comprehensive MCP capabilities:
 - `calculator_assistant`: Conversational interface
 
 **Resources (3 types)**:
+
 - `calculator://constants`: Static mathematical constants
 - `calculator://stats`: Dynamic session statistics
 - `calculator://history/{param}`: Templated resource with ID/limit queries
 
 **Prompts (3 educational)**:
+
 - `explain-calculation`: Context-rich LLM prompts
 - `generate-problems`: History-informed content generation
 - `calculator-tutorial`: Dynamic educational content
 
 ### Quality Assurance
+
 - **51 passing tests**: Comprehensive unit and integration coverage
 - **Type safety**: Full TypeScript with Zod validation
 - **Error handling**: JSON-RPC compliant error responses
@@ -142,11 +159,13 @@ Implements comprehensive MCP capabilities:
 ## Configuration & Testing
 
 ### Port Configuration
+
 - **Default**: Port 1923 (configurable via `--port` CLI or `PORT` env var)
 - **Health endpoint**: `GET /health` for monitoring
 - **MCP endpoint**: `POST/GET/DELETE /mcp` for all protocol operations
 
 ### Testing the Server
+
 ```bash
 # Interactive testing with official MCP Inspector
 npm run inspector
@@ -158,15 +177,18 @@ curl -X POST http://localhost:1923/mcp \
 ```
 
 ## Educational Value
+
 This codebase serves as a **production-ready reference implementation** teaching:
 
 ### Architecture Patterns
+
 - **Singleton Server Pattern**: The most critical MCP architectural best practice
 - **Single-Endpoint Design**: Modern `/mcp` endpoint handling all operations
 - **Clean Separation**: Business logic (calculator-server.ts) independent of transport (index.ts)
 - **Production Readiness**: Graceful shutdown, health monitoring, CORS configuration
 
 ### Advanced Features Demonstrated
+
 - **7 Comprehensive Tools**: From basic calculate to complex batch operations
 - **3 Resource Types**: Static constants, dynamic stats, templated history
 - **3 Educational Prompts**: Explain calculations, generate problems, tutorials
@@ -174,6 +196,7 @@ This codebase serves as a **production-ready reference implementation** teaching
 - **Session Management**: Simple in-memory map with automatic cleanup
 
 ### Code Quality Standards
+
 - **TypeScript**: Full type safety with Zod validation
 - **Error Handling**: Comprehensive error responses and logging
 - **Testing**: 51 passing tests with unit and integration coverage
