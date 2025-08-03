@@ -127,13 +127,13 @@ export function createCalculatorServer(): McpServer {
       sampleToolName,
       `Educational echo tool for learning MCP concepts`,
       {
-        message: z.string().describe('Message to echo back'),
+        value: z.string().describe('String to echo back'),
       },
-      async ({ message }) => ({
+      async ({ value }) => ({
         content: [
           {
             type: 'text',
-            text: `Sample tool "${sampleToolName}" received: ${message}`,
+            text: `test string print: ${value}`,
           },
         ],
       }),
