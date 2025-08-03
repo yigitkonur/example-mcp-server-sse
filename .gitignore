@@ -45,6 +45,9 @@ temp/
 tmp/
 *.tmp
 
+# Husky internal files
+.husky/_/
+
 # MCP specific
 mcp-session-*
 session-*
