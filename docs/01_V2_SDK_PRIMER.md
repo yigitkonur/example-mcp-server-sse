@@ -1,35 +1,42 @@
 # 01 - V2 SDK Primer
 
-## Current State
+## Purpose
 
-As of **February 21, 2026**, the official TypeScript SDK `main` branch documents v2 pre-alpha APIs.
+Explain the current v2 SDK state and what it changes for real server projects.
 
-Practical implications:
+## Current State (February 21, 2026)
 
-- Treat v2 as migration-focused and evolving.
-- Keep implementation simple and explicit.
-- Prefer official examples and docs for API shape confirmation.
+- v2 APIs are documented on the official `typescript-sdk` `main` branch.
+- v2 is pre-alpha.
+- v1.x remains the stable production recommendation.
 
-## Package Split
+## Package Model
 
-v2 separates responsibilities:
+v2 splits concerns across packages:
 
-- `@modelcontextprotocol/server`: server primitives and protocol surface.
-- `@modelcontextprotocol/client`: client primitives and transports.
-- `@modelcontextprotocol/node`: Node.js middleware/transport adapters.
+- `@modelcontextprotocol/server`
+- `@modelcontextprotocol/client`
+- `@modelcontextprotocol/node`
 
-## Transport Shift
+This separation is central to v2 migration design.
 
-Legacy server-side `SSEServerTransport` is removed.
+## Transport Model Shift
 
-In v2, server implementations should use Streamable HTTP behavior:
+Legacy server-side `SSEServerTransport` is removed in v2.
 
-- POST handles JSON-RPC request/response.
-- Stateful mode supports notification stream behavior via GET.
-- DELETE closes active sessions.
+For server implementations, Streamable HTTP behavior is now the migration target:
+
+- POST: request/response flow
+- GET (stateful mode): notification stream behavior
+- DELETE: session termination
 
 ## Runtime Expectations
 
 - Node.js 20+
-- ESM
-- Zod v4 schemas in registration APIs
+- ESM modules
+- Zod v4 schemas for registrations
+
+## Related Docs
+
+- Next: `02_SCAFFOLDER_CLI.md`
+- Architecture details: `03_ARCHITECTURE.md`

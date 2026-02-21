@@ -1,6 +1,10 @@
 # 02 - Scaffold Creator CLI
 
-## Command
+## Purpose
+
+Document exactly how to generate, run, and extend starter projects from this repository.
+
+## Commands
 
 Primary scaffold command:
 
@@ -8,24 +12,24 @@ Primary scaffold command:
 npm run create -- --name my-server --target ./my-server
 ```
 
-This executes:
-
-- `src/cli/create-mcp-streamable-starter.ts`
-
-Binary names:
+CLI entrypoints:
 
 - `create-mcp-streamable-starter` (primary)
 - `create-mcp-sse-starter` (compatibility alias)
 
-## What It Generates
+Implementation file:
 
-Target project includes:
+- `src/cli/create-mcp-streamable-starter.ts`
+
+## Generated Structure
+
+The scaffolded project includes:
 
 - `src/server/create-mcp-server.ts`
 - `src/server/session-registry.ts`
 - `src/server/http-server.ts`
 - `scripts/smoke.mjs`
-- `vendor/` SDK tarballs
+- `vendor/` tarballs for SDK v2 alpha dependencies
 
 ## Run Generated Project
 
@@ -45,6 +49,12 @@ npm run smoke
 
 ## Extension Workflow
 
-1. Add or modify tools in `src/server/create-mcp-server.ts`.
-2. Keep routing and session lifecycle in `src/server/http-server.ts` and `src/server/session-registry.ts`.
-3. Replace in-memory event store with persistent storage for production.
+1. Add domain tools/resources/prompts in `src/server/create-mcp-server.ts`.
+2. Keep session/transport lifecycle logic in `src/server/session-registry.ts`.
+3. Keep HTTP method routing in `src/server/http-server.ts`.
+4. Replace in-memory event storage with persistent storage for production.
+
+## Related Docs
+
+- Previous: `01_V2_SDK_PRIMER.md`
+- Next: `03_ARCHITECTURE.md`

@@ -1,30 +1,44 @@
 # 03 - Architecture
 
+## Purpose
+
+Describe the runtime architecture and why responsibilities are separated the way they are.
+
 ## Module Layout
 
 - `src/server/create-mcp-server.ts`
   - Registers tools/resources/prompts.
-  - Holds domain logic.
+  - Encapsulates domain behavior.
 
 - `src/server/session-registry.ts`
   - Owns per-session transport lifecycle.
-  - Tracks active session metadata.
-  - Cleans up transport and server instances.
+  - Tracks and cleans session state.
 
 - `src/server/http-server.ts`
-  - Routes `/mcp`, `/health`, `/`.
-  - Applies method-level behavior for POST/GET/DELETE.
-  - Delegates to session transport.
+  - Handles `/mcp`, `/health`, and root endpoints.
+  - Routes by HTTP method and delegates to transport.
 
 - `src/server/in-memory-event-store.ts`
-  - Lightweight replay model for reconnect/resume learning.
+  - Demonstrates replay behavior for reconnect/resume learning.
 
 - `src/server.ts`
-  - Runtime bootstrap.
-  - Graceful shutdown.
+  - Bootstraps runtime and performs graceful shutdown.
 
-## Why This Shape
+## Request Lifecycle (High-Level)
 
-- Keeps protocol wiring separate from domain behavior.
-- Makes migration changes safer and easier to test.
-- Aligns with v2 docs where transport lifecycle is explicit.
+1. Client sends `POST /mcp` initialize request.
+2. Registry creates transport + session state.
+3. Subsequent requests use session header and existing transport.
+4. `GET /mcp` supports stateful notification-stream behavior.
+5. `DELETE /mcp` closes session.
+
+## Why This Design
+
+- Reduces coupling between domain logic and transport wiring.
+- Makes migration-related changes safer.
+- Makes scaffolded projects easier to maintain.
+
+## Related Docs
+
+- Previous: `02_SCAFFOLDER_CLI.md`
+- Next: `04_MIGRATION_NOTES.md`

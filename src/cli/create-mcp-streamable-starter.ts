@@ -130,7 +130,9 @@ const run = async (): Promise<void> => {
 
   await replaceTokensInDir(targetDir, {
     __PROJECT_NAME__: options.projectName,
-    __PROJECT_DESCRIPTION__: options.projectDescription
+    __PROJECT_DESCRIPTION__: options.projectDescription,
+    '@@PROJECT_NAME@@': options.projectName,
+    '@@PROJECT_DESCRIPTION@@': options.projectDescription
   });
 
   console.log(`Created '${options.projectName}' in ${targetDir}`);

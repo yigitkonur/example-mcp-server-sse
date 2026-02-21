@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-02-21 - Documentation Information Architecture Rewrite
+
+### Added
+
+- Structured docs hub with explicit reading order (`docs/README.md`).
+- Consistent cross-linking and navigation language across all docs.
+- Professionalized scaffold/template documentation.
+
+### Changed
+
+- Rewrote `README.md` to align with docs structure and migration intent.
+- Rewrote all docs pages for consistency, clarity, and implementation depth.
+- Improved scaffold instructions and validation guidance.
+
 ## 2026-02-21 - Major Rewrite for Upcoming TypeScript SDK v2
 
 ### Added

@@ -1,29 +1,30 @@
 # 04 - Migration Notes
 
-## From Legacy SSE-Era Assumptions to v2
+## Purpose
 
-Old assumption:
+Map legacy assumptions to the v2 migration model used in this repository.
 
-- "Server should expose `SSEServerTransport` directly."
+## Legacy To V2 Mapping
 
-v2 approach:
+| Legacy assumption                                  | v2 migration model                                        |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| Server should expose `SSEServerTransport` directly | Use Streamable HTTP model with explicit session lifecycle |
+| One large server file is acceptable                | Separate domain, transport lifecycle, and HTTP wiring     |
+| Framework and transport concerns can stay mixed    | Keep module boundaries explicit for safer change          |
 
-- Use Streamable HTTP transport behavior.
-- Keep session lifecycle explicit.
-- Use GET stream attachment behavior only in stateful flows.
-
-## Code-Level Migration Checklist
+## Checklist
 
 - No `@modelcontextprotocol/sdk` imports.
 - No server-side `SSEServerTransport` usage.
-- Use split packages (`server`, `client`, `node`).
-- Keep schemas as Zod v4 objects.
-- Keep shutdown and cleanup deterministic.
+- Split packages only (`server`, `client`, `node`).
+- Zod v4 schema objects for registration APIs.
+- Deterministic cleanup/shutdown behavior.
 
-## This Repository’s Migration Position
+## Repository Position
 
-This repo is intentionally migration-oriented:
+This repository intentionally optimizes for migration clarity over abstraction complexity.
 
-- It demonstrates v2-compatible structure.
-- It keeps behavior explicit instead of magic abstractions.
-- It includes a scaffold generator so teams can start from the same baseline.
+## Related Docs
+
+- Previous: `03_ARCHITECTURE.md`
+- Next: `05_VALIDATION.md`

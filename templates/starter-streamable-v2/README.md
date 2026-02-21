@@ -1,21 +1,19 @@
-# **PROJECT_NAME**
+# @@PROJECT_NAME@@
 
-**PROJECT_DESCRIPTION**
+@@PROJECT_DESCRIPTION@@
 
-## What this includes
+## Changelog
 
-- MCP server built with official TypeScript SDK v2 pre-alpha primitives.
-- Streamable HTTP endpoint at `/mcp` in stateful mode for migration-friendly notification streaming behavior.
-- Session registry and in-memory replay store for learning reconnect/resume flows.
+This project is generated from the Streamable HTTP migration starter template in `example-mcp-server-sse`.
 
-## Quick start
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Server endpoint: `http://127.0.0.1:3000/mcp`
+Endpoint: `http://127.0.0.1:3000/mcp`
 
 ## Validate
 
@@ -25,12 +23,20 @@ npm run typecheck
 npm run smoke
 ```
 
-## Edit first
+## Project Structure
 
-- `src/server/create-mcp-server.ts`
-- `src/server/http-server.ts`
-- `src/server/session-registry.ts`
+- `src/server/create-mcp-server.ts`: MCP primitive registrations
+- `src/server/session-registry.ts`: session/transport lifecycle
+- `src/server/http-server.ts`: request routing
+- `scripts/smoke.mjs`: baseline runtime check
 
-## Note
+## Next Steps
 
-This starter uses vendored SDK alpha tarballs in `vendor/` because split v2 package names may not yet resolve in every npm registry environment.
+1. Add your domain tools/resources/prompts.
+2. Replace in-memory persistence for production.
+3. Add auth and deployment-specific controls.
+
+## Docs
+
+- `docs/README.md`
+- `docs/LEARNING_PATH.md`
