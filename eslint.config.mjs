@@ -5,7 +5,16 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'templates/**', '.generated/**', '.generated-*/**']
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'templates/**',
+      '.generated/**',
+      '.generated-*/**',
+      'mcp-streamable-starter/**',
+      'mcp-sse-starter/**'
+    ]
   },
   js.configs.recommended,
   {

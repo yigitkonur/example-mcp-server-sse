@@ -6,3 +6,5 @@ coverage
 *.log
 .generated
 .generated-*
+mcp-streamable-starter/
+mcp-sse-starter/
