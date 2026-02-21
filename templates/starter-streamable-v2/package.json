@@ -1,0 +1,29 @@
+{
+  "name": "__PROJECT_NAME__",
+  "version": "0.1.0",
+  "description": "__PROJECT_DESCRIPTION__",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "@modelcontextprotocol/client": "file:vendor/modelcontextprotocol-client-2.0.0-alpha.0.tgz",
+    "@modelcontextprotocol/node": "file:vendor/modelcontextprotocol-node-2.0.0-alpha.0.tgz",
+    "@modelcontextprotocol/server": "file:vendor/modelcontextprotocol-server-2.0.0-alpha.0.tgz",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.10",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

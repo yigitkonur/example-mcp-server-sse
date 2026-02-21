@@ -1,54 +1,8 @@
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-build/
-lib/
-
-# Environment variables
+node_modules
+dist
+.tsbuildinfo
+coverage
 .env
-.env.local
-.env.*.local
-
-# Logs
 *.log
-npm-debug.log*
-
-# Runtime data
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage and testing
-coverage/
-.nyc_output
-test-results/
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Cache
-.eslintcache
-*.tsbuildinfo
-.cache
-
-# Temporary files
-temp/
-tmp/
-*.tmp
-
-# Husky internal files
-.husky/_/
-
-# MCP specific
-mcp-session-*
-session-*
-*.session
+.generated
+.generated-*

@@ -1,45 +1,37 @@
 {
-  "name": "calculator-learning-demo-mcp",
-  "version": "1.0.0",
-  "description": "MCP Server - Modern reference implementation using StreamableHTTP transport",
-  "main": "dist/server.js",
+  "name": "example-mcp-server-streamable-http-v2-starter",
+  "version": "2.0.0-alpha.0",
+  "description": "MCP v2 pre-alpha Streamable HTTP migration starter, CLI scaffolder, and learning project",
   "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "create-mcp-streamable-starter": "dist/cli/create-mcp-streamable-starter.js",
+    "create-mcp-sse-starter": "dist/cli/create-mcp-streamable-starter.js"
+  },
   "scripts": {
     "dev": "tsx src/server.ts",
-    "clean": "rimraf dist build .tsbuildinfo",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist .tsbuildinfo",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "lint:ci": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "tsc -p tsconfig.json",
-    "check:quick": "npm run typecheck && npm run lint:ci && npm run format:check",
-    "check:deep": "npm run typecheck && npm run lint:fix && npm run lint:ci && npm run format && npm run format:check",
-    "pipeline": "npm run clean && npm run typecheck && npm run lint:fix && npm run lint:ci && npm run format && npm run format:check && npm run build",
-    "smoke:stdio": "node -e \"const {spawn}=require('child_process');try{const p=spawn('node',['dist/server.js'],{stdio:['ignore','pipe','pipe']});let exited=false;const timer=setTimeout(()=>{if(!exited){p.kill('SIGINT');}},900);p.on('exit',c=>{exited=true;clearTimeout(timer);if(c&&c!==0){process.exit(c);}console.log('smoke:stdio exit',c||0);});}catch(e){console.error(e);process.exit(1);} \"",
-    "smoke:http": "node -e \"const http=require('http');const {spawn}=require('child_process');const ports=[1923,1453,3333];const s=spawn('node',['dist/server.js'],{stdio:'inherit'});let i=0,tries=0,ok=false;function hit(){if(i>=ports.length){if(!ok){s.kill('SIGINT');process.exit(1);}return;}const port=ports[i];tries++;http.get({host:'127.0.0.1',port,path:'/sse'},res=>{ok=true;console.log('SSE endpoint status',res.statusCode,'on',port);s.kill('SIGINT');if(res.statusCode===400||res.statusCode===200)process.exit(0);else process.exit(1);}).on('error',()=>{if(tries<5){setTimeout(hit,300);}else{tries=0;i++;setTimeout(hit,200);} });}setTimeout(hit,600);\"",
-    "smoke:auto": "node -e \"const http=require('http');const {spawn}=require('child_process');const ports=[1923,1453,3333];const s=spawn('node',['dist/server.js'],{stdio:'inherit'});let i=0,tries=0,ok=false;function hit(){if(i>=ports.length){if(!ok){console.log('No HTTP detected; assuming STDIO-style process.');setTimeout(()=>{s.kill('SIGINT');process.exit(0);},800);return;}return;}const port=ports[i];tries++;http.get({host:'127.0.0.1',port,path:'/sse'},res=>{ok=true;console.log('SSE endpoint status',res.statusCode,'on',port);s.kill('SIGINT');if(res.statusCode===400||res.statusCode===200)process.exit(0);else process.exit(1);}).on('error',()=>{if(tries<5){setTimeout(hit,300);}else{tries=0;i++;setTimeout(hit,200);} });}setTimeout(hit,600);\"",
-    "all": "npm run pipeline && npm run smoke:auto",
-    "start": "node dist/server.js --port 1923",
+    "create": "tsx src/cli/create-mcp-streamable-starter.ts",
+    "start": "node dist/server.js",
+    "demo:client": "tsx src/demo-client.ts",
+    "smoke:server": "node scripts/smoke-server.mjs",
     "check": "npm run typecheck && npm run lint:ci && npm run format:check",
-    "ci": "npm run all",
-    "inspector": "npx @modelcontextprotocol/inspector --cli http://localhost:1923/sse",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,json,md,css,scss}": [
-      "prettier --write",
-      "eslint --fix"
-    ]
+    "ci": "npm run check && npm run build && npm run smoke:server"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "sse",
-    "server-sent-events",
+    "streamable-http",
+    "migration",
     "typescript",
-    "best-practices"
+    "starter",
+    "boilerplate"
   ],
   "author": "Yigit Konur",
   "license": "MIT",
@@ -50,32 +42,24 @@
     "type": "git",
     "url": "https://github.com/yigitkonur/example-mcp-server-sse"
   },
-  "bugs": {
-    "url": "https://github.com/yigitkonur/example-mcp-server-sse/issues"
-  },
   "homepage": "https://github.com/yigitkonur/example-mcp-server-sse#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "uuid": "^9.0.1",
-    "zod": "^3.22.4"
+    "@cfworker/json-schema": "^4.1.1",
+    "@modelcontextprotocol/client": "file:vendor/modelcontextprotocol-client-2.0.0-alpha.0.tgz",
+    "@modelcontextprotocol/node": "file:vendor/modelcontextprotocol-node-2.0.0-alpha.0.tgz",
+    "@modelcontextprotocol/server": "file:vendor/modelcontextprotocol-server-2.0.0-alpha.0.tgz",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.23",
-    "@types/node": "^20.11.0",
-    "@types/uuid": "^9.0.7",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "eslint": "^8.56.0",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.18.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.1.3",
-    "prettier": "^3.2.4",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
-    "tsx": "^4.20.3",
-    "typescript": "^5.3.3"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }

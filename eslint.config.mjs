@@ -1,10 +1,13 @@
-// eslint.config.mjs
+import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'coverage/**'] },
+  {
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'templates/**', '.generated/**', '.generated-*/**']
+  },
+  js.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -12,24 +15,25 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: './tsconfig.json',
-      },
+        project: './tsconfig.json'
+      }
     },
     plugins: { '@typescript-eslint': tseslint },
     rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-floating-promises': 'error',
-      '@typescript-eslint/no-misused-promises': [
-        'error',
-        { checksVoidReturn: { attributes: false } },
-      ],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-      ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-debugger': 'error',
-    },
+      '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-console': 'off'
+    }
   },
-  eslintConfigPrettier,
+  {
+    files: ['**/*.{js,mjs,cjs}'],
+    rules: {
+      'no-undef': 'off'
+    }
+  },
+  eslintConfigPrettier
 ];

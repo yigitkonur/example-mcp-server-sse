@@ -5,15 +5,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
-    "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
@@ -21,10 +14,7 @@
     "rootDir": "src",
     "sourceMap": true,
     "skipLibCheck": true,
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
     "types": ["node"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "coverage"]
+  "include": ["src"]
 }
