@@ -4,7 +4,7 @@
 
 ## Changelog
 
-This project is generated from the Streamable HTTP migration starter template in `example-mcp-server-sse`.
+This project is generated from the Streamable HTTP migration starter template in the parent repository.
 
 ## Quick Start
 

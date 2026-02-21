@@ -40,9 +40,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yigitkonur/example-mcp-server-sse"
+    "url": "https://github.com/yigitkonur/example-mcp-sse"
   },
-  "homepage": "https://github.com/yigitkonur/example-mcp-server-sse#readme",
+  "homepage": "https://github.com/yigitkonur/example-mcp-sse#readme",
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
     "@modelcontextprotocol/client": "file:vendor/modelcontextprotocol-client-2.0.0-alpha.0.tgz",
