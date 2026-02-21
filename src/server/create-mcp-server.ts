@@ -55,7 +55,7 @@ export const createExampleMcpServer = (): ExampleMcpServer => {
 
   const server = new McpServer(
     {
-      name: 'learning-mcp-streamable-server',
+      name: 'example-mcp-sse',
       version: '2.0.0-alpha.0'
     },
     {

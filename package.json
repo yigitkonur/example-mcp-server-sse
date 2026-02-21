@@ -1,5 +1,5 @@
 {
-  "name": "example-mcp-server-streamable-http-v2-starter",
+  "name": "example-mcp-sse",
   "version": "2.0.0-alpha.0",
   "description": "MCP v2 pre-alpha Streamable HTTP migration starter, CLI scaffolder, and learning project",
   "type": "module",

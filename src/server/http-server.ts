@@ -129,7 +129,7 @@ export const createMcpHttpServer = (registry: SessionRegistry) => {
 
       if (requestUrl.pathname === '/') {
         sendJson(res, 200, {
-          name: 'example-mcp-server-streamable-http-v2-starter',
+          name: 'example-mcp-sse',
           transport: 'Streamable HTTP with notification streaming',
           endpoint: '/mcp',
           health: '/health'
