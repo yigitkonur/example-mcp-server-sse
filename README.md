@@ -1,129 +1,71 @@
-# MCP v2 Streamable HTTP Migration Starter
+# example-mcp-sse
 
-A professional, migration-focused starter for building MCP servers on top of the official TypeScript SDK v2 pre-alpha primitives.
+migration-focused starter for building MCP servers on Streamable HTTP, replacing the deprecated SSE transport. uses TypeScript SDK v2 pre-alpha.
 
-## Changelog (Latest First)
+> part of a series: [stdio](https://github.com/yigitkonur/example-mcp-stdio) · [stateless](https://github.com/yigitkonur/example-mcp-stateless) · [stateful](https://github.com/yigitkonur/example-mcp-stateful) · **sse** (you are here)
 
-- `2026-02-21`: Major rewrite for upcoming TypeScript SDK v2.
-  - Migrated from v1-style monolith to modular Streamable HTTP architecture.
-  - Added scaffold CLI and reusable project template.
-  - Added root and generated-project smoke validation.
-  - Removed legacy server-side `SSEServerTransport` usage.
-- Full history: `CHANGELOG.md`
+## what it does
 
-## Start Here
+- runnable Streamable HTTP server with session management, event replay, and graceful shutdown
+- scaffold CLI (`create-mcp-streamable-starter` / `create-mcp-sse-starter`) to generate new projects from a proven template
+- calculator demo with tools, resources, prompts, and structured output to exercise all MCP primitives
+- vendored SDK v2 alpha tarballs for reproducible installs without npm registry dependency
+- smoke tests for both the root project and scaffolded output
+- CI workflow that validates root build, lint, typecheck, and generated project end-to-end
 
-1. Read `docs/README.md`.
-2. Run the root server.
-3. Generate a scaffolded project.
-4. Validate both root and generated projects.
-
-## v2 SDK Status (As Of February 21, 2026)
-
-- The official `typescript-sdk` `main` branch documents v2 pre-alpha APIs.
-- v1.x remains the stable production recommendation.
-- Server-side legacy `SSEServerTransport` is removed in v2.
-- Migration target is Streamable HTTP behavior in stateful flows.
-
-## Repository Scope
-
-This repository provides:
-
-- A runnable migration-oriented server in `src/`.
-- A scaffold creator CLI:
-  - Primary command: `create-mcp-streamable-starter`
-  - Compatibility alias: `create-mcp-sse-starter`
-- A reusable template in `templates/starter-streamable-v2`.
-- Structured documentation in `docs/`.
-
-## Quick Start (Root Project)
+## quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Endpoints:
+the server starts at `http://127.0.0.1:3000` with these endpoints:
 
-- MCP: `http://127.0.0.1:3000/mcp`
-- Health: `http://127.0.0.1:3000/health`
+| endpoint  | method         | purpose                              |
+|-----------|----------------|--------------------------------------|
+| `/mcp`    | POST           | JSON-RPC request/response            |
+| `/mcp`    | GET            | notification stream (stateful SSE)   |
+| `/mcp`    | DELETE         | session termination                  |
+| `/health` | GET            | health check with active session list|
+| `/`       | GET            | server metadata                      |
 
-## Scaffold Creator CLI
-
-Generate a new project:
+configure with environment variables or CLI flags:
 
 ```bash
-npm run create -- --name my-mcp-server --target ./my-mcp-server
+PORT=4000 npm run dev
+# or
+npm run dev -- --port 4000
 ```
 
-Run generated project:
+## scaffold cli
+
+generate a new MCP Streamable HTTP project:
 
 ```bash
-cd my-mcp-server
+npm run create -- --name my-server --target ./my-server
+cd my-server
 npm install
 npm run dev
 ```
 
-Generated project includes:
+the generated project includes the full server module structure, vendored SDK tarballs, and its own smoke test. see [docs/03-scaffold-cli.md](docs/03-scaffold-cli.md) for the complete reference.
 
-- `src/server/create-mcp-server.ts`
-- `src/server/session-registry.ts`
-- `src/server/http-server.ts`
-- `scripts/smoke.mjs`
-- `vendor/` SDK v2 alpha tarballs
+## documentation
 
-## Validation
+| doc | description |
+|-----|-------------|
+| [docs/README.md](docs/README.md) | documentation hub and reading order |
+| [docs/01-getting-started.md](docs/01-getting-started.md) | prerequisites, install, run, verify |
+| [docs/02-architecture.md](docs/02-architecture.md) | module layout, request lifecycle, design rationale |
+| [docs/03-scaffold-cli.md](docs/03-scaffold-cli.md) | CLI reference, generated structure, extension workflow |
+| [docs/04-sdk-v2-notes.md](docs/04-sdk-v2-notes.md) | v2 packages, migration checklist, vendoring strategy |
+| [docs/05-validation.md](docs/05-validation.md) | root and generated project validation, release checklist |
 
-Root:
+## sdk v2 context
 
-```bash
-npm run ci
-```
+this project targets the MCP TypeScript SDK v2 pre-alpha (`2.0.0-alpha.0`). v2 splits the monolithic `@modelcontextprotocol/sdk` into `@modelcontextprotocol/server`, `@modelcontextprotocol/client`, and `@modelcontextprotocol/node`. the server-side `SSEServerTransport` is removed; `NodeStreamableHTTPServerTransport` from `@modelcontextprotocol/node` is the replacement. v1.x remains the stable production recommendation from the upstream project. vendored tarballs in `vendor/` pin the exact alpha artifacts for reproducible builds.
 
-Generated project:
+## license
 
-```bash
-npm run create -- --name verify --target .generated/verify
-cd .generated/verify
-npm install
-npm run build
-npm run typecheck
-npm run smoke
-```
-
-Detailed validation guide: `docs/05_VALIDATION.md`
-
-## Documentation Map
-
-- `docs/README.md`: documentation hub and reading order
-- `docs/01_V2_SDK_PRIMER.md`: v2 SDK changes and practical impact
-- `docs/02_SCAFFOLDER_CLI.md`: scaffold CLI usage and extension model
-- `docs/03_ARCHITECTURE.md`: module-by-module architecture and request lifecycle
-- `docs/04_MIGRATION_NOTES.md`: migration mapping from legacy assumptions
-- `docs/05_VALIDATION.md`: repeatable verification workflows
-
-## Vendored SDK Tarballs
-
-In this environment, split v2 package names were not resolvable directly from npm, so this repository pins official v2 alpha artifacts in `vendor/` for reproducible installs.
-
-Refresh flow:
-
-```bash
-cd ../typescript-sdk
-pnpm --filter @modelcontextprotocol/server pack
-pnpm --filter @modelcontextprotocol/node pack
-pnpm --filter @modelcontextprotocol/client pack
-```
-
-After packing, update tarballs in `vendor/` and update filenames in:
-
-- `package.json`
-- `templates/starter-streamable-v2/package.json`
-
-## Official Sources
-
-- https://github.com/modelcontextprotocol/typescript-sdk/blob/main/README.md
-- https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md
-- https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md
-- https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration.md
-- https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/faq.md
+MIT
